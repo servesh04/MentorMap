@@ -30,7 +30,7 @@ const Login: React.FC = () => {
                     <LogIn className="w-8 h-8" />
                 </div>
 
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to CogniFlow</h1>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to MentorMap</h1>
                 <p className="text-gray-500 mb-8">Your smart learning companion.</p>
 
                 <button

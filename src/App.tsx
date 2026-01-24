@@ -6,7 +6,9 @@ import Explore from './pages/Explore';
 import CourseDetail from './pages/CourseDetail';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
+import Landing from './pages/Landing';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
+import CustomCursor from './components/ui/CustomCursor';
 
 import { useAuth } from './hooks/useAuth';
 
@@ -15,15 +17,17 @@ const App: React.FC = () => {
 
   return (
     <Router>
+      <CustomCursor />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Landing />} />
 
         <Route element={
           <ProtectedRoute>
             <Layout />
           </ProtectedRoute>
         }>
-          <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Home />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
