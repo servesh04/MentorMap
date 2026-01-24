@@ -10,7 +10,35 @@ export const COURSES: Course[] = [
         modules: [
             { id: 'm1', title: 'Introduction to Python', type: 'video', duration: '15 min' },
             { id: 'm2', title: 'Variables and Data Types', type: 'video', duration: '20 min' },
-            { id: 'q1', title: 'Basics Quiz', type: 'quiz', duration: '10 min' },
+            {
+                id: 'q1',
+                title: 'Basics Quiz',
+                type: 'quiz',
+                duration: '10 min',
+                quiz: {
+                    passingScore: 80,
+                    questions: [
+                        {
+                            id: 'q1_1',
+                            text: 'What is the output of print(2 ** 3)?',
+                            options: ['6', '8', '9', 'Error'],
+                            correctAnswer: 1
+                        },
+                        {
+                            id: 'q1_2',
+                            text: 'Which of these is a valid variable name?',
+                            options: ['2var', 'my-var', 'my_var', 'class'],
+                            correctAnswer: 2
+                        },
+                        {
+                            id: 'q1_3',
+                            text: 'What is the correct file extension for Python files?',
+                            options: ['.py', '.python', '.pt', '.p'],
+                            correctAnswer: 0
+                        }
+                    ]
+                }
+            },
         ]
     },
     {

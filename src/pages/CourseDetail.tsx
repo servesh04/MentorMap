@@ -1,23 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { COURSES } from '../data/mockData';
-import { ArrowLeft, PlayCircle, FileText, CheckCircle } from 'lucide-react';
+import { ArrowLeft, PlayCircle, FileText, CheckCircle, LayoutList, Map as MapIcon, Loader } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import ResourceRecommender from '../components/ResourceRecommender';
 import clsx from 'clsx';
+import RoadmapView from '../components/roadmap/RoadmapView';
+import QuizModal from '../modals/QuizModal';
+import type { Module, Course } from '../types';
+import { courseService } from '../services/courseService';
 
 const CourseDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { currentUser, toggleModuleCompletion, completedModules, activeCourses, setActiveCourses } = useStore();
     const [enrolling, setEnrolling] = useState(false);
+    const [viewMode, setViewMode] = useState<'list' | 'roadmap'>('list');
+    const [selectedQuizModule, setSelectedQuizModule] = useState<Module | null>(null);
+
+    const [course, setCourse] = useState<Course | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCourse = async () => {
+            if (!id) return;
+            try {
+                const data = await courseService.getCourseById(id);
+                setCourse(data);
+            } catch (error) {
+                console.error("Failed to load course", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCourse();
+    }, [id]);
 
     // Check if enrolled based on store state, not just local state
     const isEnrolled = activeCourses.includes(id || '');
 
-    const course = COURSES.find(c => c.id === id);
+    if (loading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Loader className="animate-spin text-indigo-600" size={32} />
+            </div>
+        );
+    }
 
     if (!course) {
         return <div className="p-6 text-center">Course not found</div>;
@@ -41,6 +71,29 @@ const CourseDetail: React.FC = () => {
             alert("Failed to enroll. Please try again.");
         } finally {
             setEnrolling(false);
+        }
+    };
+
+    const handleRoadmapNodeClick = (moduleId: string) => {
+        const module = course.modules.find(m => m.id === moduleId);
+        if (!module) return;
+
+        if (module.type === 'quiz') {
+            setSelectedQuizModule(module);
+        } else {
+            // For video modules, just toggle completion for now (simulating watching)
+            // In a real app, this would open the video player
+            toggleModuleCompletion(course.id, module.id);
+        }
+    };
+
+    const handleQuizPass = () => {
+        if (selectedQuizModule && currentUser) {
+            // Only toggle if not already completed (avoid un-toggling)
+            if (!courseCompletedModules.includes(selectedQuizModule.id)) {
+                toggleModuleCompletion(course.id, selectedQuizModule.id);
+            }
+            setSelectedQuizModule(null);
         }
     };
 
@@ -82,47 +135,79 @@ const CourseDetail: React.FC = () => {
                     {course.description}
                 </p>
 
-                <h3 className="font-bold text-gray-900 mb-4 text-lg">Course Modules</h3>
-                <div className="space-y-3 mb-8">
-                    {course.modules.map((module, index) => {
-                        const isCompleted = courseCompletedModules.includes(module.id);
-                        return (
-                            <div
-                                key={module.id}
-                                className={clsx(
-                                    "flex items-center p-4 rounded-xl border transition-colors cursor-pointer",
-                                    isCompleted ? "bg-indigo-50 border-indigo-100" : "bg-gray-50 border-gray-100"
-                                )}
-                                onClick={() => toggleModuleCompletion(course.id, module.id)}
-                            >
-                                <div className={clsx(
-                                    "w-6 h-6 rounded-md flex items-center justify-center border mr-4 transition-colors",
-                                    isCompleted ? "bg-indigo-600 border-indigo-600" : "bg-white border-gray-300"
-                                )}>
-                                    {isCompleted && <CheckCircle className="w-4 h-4 text-white" />}
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className={clsx(
-                                        "text-sm font-semibold transition-colors",
-                                        isCompleted ? "text-indigo-900" : "text-gray-900"
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-bold text-gray-900 text-lg">Course Modules</h3>
+
+                    <div className="bg-gray-100 p-1 rounded-lg flex items-center">
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={clsx(
+                                "p-2 rounded-md transition-all",
+                                viewMode === 'list' ? "bg-white shadow-sm text-indigo-600" : "text-gray-500 hover:text-gray-700"
+                            )}
+                        >
+                            <LayoutList size={20} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('roadmap')}
+                            className={clsx(
+                                "p-2 rounded-md transition-all",
+                                viewMode === 'roadmap' ? "bg-white shadow-sm text-indigo-600" : "text-gray-500 hover:text-gray-700"
+                            )}
+                        >
+                            <MapIcon size={20} />
+                        </button>
+                    </div>
+                </div>
+
+                {viewMode === 'list' ? (
+                    <div className="space-y-3 mb-8">
+                        {course.modules.map((module, index) => {
+                            const isCompleted = courseCompletedModules.includes(module.id);
+                            return (
+                                <div
+                                    key={module.id}
+                                    className={clsx(
+                                        "flex items-center p-4 rounded-xl border transition-colors cursor-pointer",
+                                        isCompleted ? "bg-indigo-50 border-indigo-100" : "bg-gray-50 border-gray-100"
+                                    )}
+                                    onClick={() => handleRoadmapNodeClick(module.id)}
+                                >
+                                    <div className={clsx(
+                                        "w-6 h-6 rounded-md flex items-center justify-center border mr-4 transition-colors",
+                                        isCompleted ? "bg-indigo-600 border-indigo-600" : "bg-white border-gray-300"
                                     )}>
-                                        {module.title}
-                                    </h4>
-                                    <div className="flex items-center text-xs text-gray-500 mt-1">
-                                        {module.type === 'video' ? <PlayCircle className="w-3 h-3 mr-1" /> : <FileText className="w-3 h-3 mr-1" />}
-                                        {module.duration}
+                                        {isCompleted && <CheckCircle className="w-4 h-4 text-white" />}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className={clsx(
+                                            "text-sm font-semibold transition-colors",
+                                            isCompleted ? "text-indigo-900" : "text-gray-900"
+                                        )}>
+                                            {module.title}
+                                        </h4>
+                                        <div className="flex items-center text-xs text-gray-500 mt-1">
+                                            {module.type === 'video' ? <PlayCircle className="w-3 h-3 mr-1" /> : <FileText className="w-3 h-3 mr-1" />}
+                                            {module.duration}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <RoadmapView
+                        modules={course.modules}
+                        completedModuleIds={courseCompletedModules}
+                        onModuleClick={handleRoadmapNodeClick}
+                    />
+                )}
 
                 <ResourceRecommender />
             </div>
 
             {/* Fixed Bottom Enrollment Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 safe-area-bottom">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 safe-area-bottom z-40">
                 <button
                     onClick={handleEnroll}
                     disabled={enrolling || isEnrolled}
@@ -138,6 +223,15 @@ const CourseDetail: React.FC = () => {
                     )}
                 </button>
             </div>
+
+            {/* Quiz Modal */}
+            {selectedQuizModule && (
+                <QuizModal
+                    module={selectedQuizModule}
+                    onClose={() => setSelectedQuizModule(null)}
+                    onPass={handleQuizPass}
+                />
+            )}
         </div>
     );
 };
