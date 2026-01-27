@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is accessing their own document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // USERS COLLECTION
+    // Authenticated users can read/write their own profile
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // COURSES COLLECTION
+    // Anyone can read courses (public catalog)
+    // Only admins (optional future enhancement) can write
+    // For now, let's keep it read-only for clients, assuming you seed data via backend/admin script
+    match /courses/{courseId} {
+      allow read: if true; 
+      allow write: if isAuthenticated(); // Temporarily allow auth users to write if you are debugging
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

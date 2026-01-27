@@ -28,17 +28,17 @@ const Explore: React.FC = () => {
     return (
         <div className="p-6 pb-24">
             <header className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Explore</h1>
-                <p className="text-gray-500">Discover new learning paths.</p>
+                <h1 className="text-2xl font-bold text-foreground">Explore</h1>
+                <p className="text-muted-foreground">Discover new learning paths.</p>
             </header>
 
             {/* Search Bar */}
             <div className="relative mb-6">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
                 <input
                     type="text"
                     placeholder="Search courses..."
-                    className="w-full bg-gray-100 py-3 pl-10 pr-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    className="w-full bg-card border border-border text-foreground py-3 pl-10 pr-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-muted-foreground"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -49,7 +49,7 @@ const Explore: React.FC = () => {
                     <div
                         key={course.id}
                         onClick={() => navigate(`/course/${course.id}`)}
-                        className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 cursor-pointer hover:shadow-md transition-shadow"
+                        className="bg-card p-4 rounded-2xl shadow-sm border border-border flex gap-4 cursor-pointer hover:shadow-md transition-shadow"
                     >
                         <div
                             className="w-20 h-20 rounded-xl bg-cover bg-center flex-shrink-0"
@@ -61,9 +61,9 @@ const Explore: React.FC = () => {
                                     {course.level}
                                 </span>
                             </div>
-                            <h3 className="font-semibold text-gray-900 mb-1">{course.title}</h3>
-                            <p className="text-sm text-gray-500 line-clamp-2 mb-2">{course.description}</p>
-                            <div className="flex items-center text-gray-400 text-xs gap-3">
+                            <h3 className="font-semibold text-foreground mb-1">{course.title}</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{course.description}</p>
+                            <div className="flex items-center text-muted-foreground text-xs gap-3">
                                 <div className="flex items-center gap-1">
                                     <BarChart className="w-3 h-3" />
                                     <span>{course.modules.length} Modules</span>
@@ -75,7 +75,7 @@ const Explore: React.FC = () => {
             </div>
 
             {filteredCourses.length === 0 && (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 text-muted-foreground">
                     <p>No courses found matching "{searchTerm}"</p>
                 </div>
             )}

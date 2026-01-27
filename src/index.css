@@ -103,16 +103,3 @@
     overscroll-behavior-y: none;
   }
 }
-
-/* Hide default cursor on desktop when using custom cursor */
-@media (hover: hover) and (pointer: fine) {
-
-  body.custom-cursor-active,
-  body.custom-cursor-active a,
-  body.custom-cursor-active button,
-  body.custom-cursor-active input,
-  body.custom-cursor-active textarea,
-  body.custom-cursor-active select {
-    cursor: none !important;
-  }
-}

@@ -44,22 +44,22 @@ const Home: React.FC = () => {
             </div>
 
             <header className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-                <p className="text-gray-500">Welcome back, {currentUser?.displayName?.split(' ')[0] || 'Learner'}!</p>
+                <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+                <p className="text-muted-foreground">Welcome back, {currentUser?.displayName?.split(' ')[0] || 'Learner'}!</p>
             </header>
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+            <div className="bg-card rounded-2xl p-6 shadow-sm border border-border mb-6">
                 <div className="flex justify-between items-end mb-2">
                     <h3 className="text-lg font-semibold">Overall Progress</h3>
                     <span className="text-2xl font-bold text-primary">{overallProgress}%</span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
                     <div
                         className="bg-primary h-full rounded-full transition-all duration-1000 ease-out"
                         style={{ width: `${overallProgress}%` }}
                     ></div>
                 </div>
-                <p className="text-sm text-gray-500 mt-3 flex justify-between">
+                <p className="text-sm text-muted-foreground mt-3 flex justify-between">
                     <span>{completedCount} of {totalModules} modules completed</span>
                     <span className="text-primary font-medium">Keep it up!</span>
                 </p>
@@ -76,7 +76,7 @@ const Home: React.FC = () => {
                 </div>
             </div>
 
-            <h3 className="font-bold text-gray-900 mb-4 text-lg">Continue Learning</h3>
+            <h3 className="font-bold text-foreground mb-4 text-lg">Continue Learning</h3>
             {activeCourses.length > 0 ? (
                 <div className="space-y-4">
                     {courses.filter(c => activeCourses.includes(c.id)).map(course => {
@@ -104,8 +104,8 @@ const Home: React.FC = () => {
                     })}
                 </div>
             ) : (
-                <div className="text-center py-8 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                    <p className="text-gray-500 mb-4">You haven't enrolled in any courses yet.</p>
+                <div className="text-center py-8 bg-muted/30 rounded-2xl border border-dashed border-border">
+                    <p className="text-muted-foreground mb-4">You haven't enrolled in any courses yet.</p>
                     <a href="/explore" className="inline-block px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-colors">
                         Explore Courses
                     </a>

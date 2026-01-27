@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { useStore } from '../store/useStore';
 
-export const useAuth = () => {
+export const useAuthListener = () => {
     const { setCurrentUser, setUserRole, setAuthLoading, setActiveCourses } = useStore();
 
     useEffect(() => {
@@ -38,15 +38,33 @@ export const useAuth = () => {
 
         return () => unsubscribe();
     }, [setCurrentUser, setUserRole, setAuthLoading, setActiveCourses]);
+};
 
+export const useAuth = () => {
     const login = async () => {
         try {
             await signInWithPopup(auth, googleProvider);
         } catch (error: any) {
             console.error("Login failed:", error);
-            console.error("Error code:", error.code);
-            console.error("Error message:", error.message);
             alert(`Login failed: ${error.message}`);
+        }
+    };
+
+    const signupWithEmail = async (email: string, password: string) => {
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+        } catch (error: any) {
+            console.error("Signup failed:", error);
+            throw error;
+        }
+    };
+
+    const loginWithEmail = async (email: string, password: string) => {
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+        } catch (error: any) {
+            console.error("Login failed:", error);
+            throw error;
         }
     };
 
@@ -58,5 +76,5 @@ export const useAuth = () => {
         }
     };
 
-    return { login, logout };
+    return { login, logout, signupWithEmail, loginWithEmail };
 };
