@@ -10,6 +10,7 @@ import RoadmapView from '../components/roadmap/RoadmapView';
 import QuizModal from '../modals/QuizModal';
 import type { Module, Course } from '../types';
 import { courseService } from '../services/courseService';
+import DynamicCourseView from './DynamicCourseView';
 
 const CourseDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -135,75 +136,81 @@ const CourseDetail: React.FC = () => {
                     {course.description}
                 </p>
 
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-bold text-gray-900 text-lg">Course Modules</h3>
-
-                    <div className="bg-gray-100 p-1 rounded-lg flex items-center">
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={clsx(
-                                "p-2 rounded-md transition-all",
-                                viewMode === 'list' ? "bg-white shadow-sm text-indigo-600" : "text-gray-500 hover:text-gray-700"
-                            )}
-                        >
-                            <LayoutList size={20} />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('roadmap')}
-                            className={clsx(
-                                "p-2 rounded-md transition-all",
-                                viewMode === 'roadmap' ? "bg-white shadow-sm text-indigo-600" : "text-gray-500 hover:text-gray-700"
-                            )}
-                        >
-                            <MapIcon size={20} />
-                        </button>
-                    </div>
-                </div>
-
-                {viewMode === 'list' ? (
-                    <div className="space-y-3 mb-8">
-                        {course.modules.map((module, index) => {
-                            const isCompleted = courseCompletedModules.includes(module.id);
-                            return (
-                                <div
-                                    key={module.id}
-                                    className={clsx(
-                                        "flex items-center p-4 rounded-xl border transition-colors cursor-pointer",
-                                        isCompleted ? "bg-indigo-50 border-indigo-100" : "bg-gray-50 border-gray-100"
-                                    )}
-                                    onClick={() => handleRoadmapNodeClick(module.id)}
-                                >
-                                    <div className={clsx(
-                                        "w-6 h-6 rounded-md flex items-center justify-center border mr-4 transition-colors",
-                                        isCompleted ? "bg-indigo-600 border-indigo-600" : "bg-white border-gray-300"
-                                    )}>
-                                        {isCompleted && <CheckCircle className="w-4 h-4 text-white" />}
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className={clsx(
-                                            "text-sm font-semibold transition-colors",
-                                            isCompleted ? "text-indigo-900" : "text-gray-900"
-                                        )}>
-                                            {module.title}
-                                        </h4>
-                                        <div className="flex items-center text-xs text-gray-500 mt-1">
-                                            {module.type === 'video' ? <PlayCircle className="w-3 h-3 mr-1" /> : <FileText className="w-3 h-3 mr-1" />}
-                                            {module.duration}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                {course.isGenerated ? (
+                    <DynamicCourseView course={course} />
                 ) : (
-                    <RoadmapView
-                        modules={course.modules}
-                        completedModuleIds={courseCompletedModules}
-                        onModuleClick={handleRoadmapNodeClick}
-                    />
-                )}
+                    <>
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="font-bold text-gray-900 text-lg">Course Modules</h3>
 
-                <ResourceRecommender />
+                            <div className="bg-gray-100 p-1 rounded-lg flex items-center">
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    className={clsx(
+                                        "p-2 rounded-md transition-all",
+                                        viewMode === 'list' ? "bg-white shadow-sm text-indigo-600" : "text-gray-500 hover:text-gray-700"
+                                    )}
+                                >
+                                    <LayoutList size={20} />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('roadmap')}
+                                    className={clsx(
+                                        "p-2 rounded-md transition-all",
+                                        viewMode === 'roadmap' ? "bg-white shadow-sm text-indigo-600" : "text-gray-500 hover:text-gray-700"
+                                    )}
+                                >
+                                    <MapIcon size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {viewMode === 'list' ? (
+                            <div className="space-y-3 mb-8">
+                                {course.modules.map((module, _) => {
+                                    const isCompleted = courseCompletedModules.includes(module.id);
+                                    return (
+                                        <div
+                                            key={module.id}
+                                            className={clsx(
+                                                "flex items-center p-4 rounded-xl border transition-colors cursor-pointer",
+                                                isCompleted ? "bg-indigo-50 border-indigo-100" : "bg-gray-50 border-gray-100"
+                                            )}
+                                            onClick={() => handleRoadmapNodeClick(module.id)}
+                                        >
+                                            <div className={clsx(
+                                                "w-6 h-6 rounded-md flex items-center justify-center border mr-4 transition-colors",
+                                                isCompleted ? "bg-indigo-600 border-indigo-600" : "bg-white border-gray-300"
+                                            )}>
+                                                {isCompleted && <CheckCircle className="w-4 h-4 text-white" />}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className={clsx(
+                                                    "text-sm font-semibold transition-colors",
+                                                    isCompleted ? "text-indigo-900" : "text-gray-900"
+                                                )}>
+                                                    {module.title}
+                                                </h4>
+                                                <div className="flex items-center text-xs text-gray-500 mt-1">
+                                                    {module.type === 'video' ? <PlayCircle className="w-3 h-3 mr-1" /> : <FileText className="w-3 h-3 mr-1" />}
+                                                    {module.duration}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <RoadmapView
+                                modules={course.modules}
+                                completedModuleIds={courseCompletedModules}
+                                onModuleClick={handleRoadmapNodeClick}
+                            />
+                        )}
+
+                        <ResourceRecommender />
+                    </>
+                )}
             </div>
 
             {/* Fixed Bottom Enrollment Bar */}

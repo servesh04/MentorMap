@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/useStore';
-import { LogIn } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
+import Logo from '../components/Logo';
 
 const Login: React.FC = () => {
     const { login, signupWithEmail, loginWithEmail } = useAuth();
@@ -60,11 +60,11 @@ const Login: React.FC = () => {
             </div>
 
             <div className="w-full max-w-sm bg-card border border-border rounded-2xl shadow-xl p-8 text-center">
-                <div className="w-16 h-16 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-xl mx-auto mb-6 flex items-center justify-center text-white">
-                    <LogIn className="w-8 h-8" />
+                <div className="flex justify-center mb-6">
+                    <Logo className="w-40" />
                 </div>
 
-                <h1 className="text-2xl font-bold text-foreground mb-2">Welcome to MentorMap</h1>
+                <h1 className="text-2xl font-bold text-foreground mb-2">Welcome Back</h1>
                 <p className="text-muted-foreground mb-8">
                     {isSignUp ? "Create an account to get started." : "Your smart learning companion."}
                 </p>

@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Search, Loader } from 'lucide-react';
-import { useCourses } from '../hooks/useCourses';
+import { BarChart, Search, Loader, Sparkles } from 'lucide-react';
+import { useCourseSearch } from '../hooks/useCourseSearch';
 
 const Explore: React.FC = () => {
     const navigate = useNavigate();
-    const { courses, loading, error } = useCourses();
     const [searchTerm, setSearchTerm] = useState('');
-
-    const filteredCourses = courses.filter(course =>
-        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const { courses: filteredCourses, loading, error } = useCourseSearch(searchTerm);
 
     if (loading) {
         return (
@@ -60,6 +55,12 @@ const Explore: React.FC = () => {
                                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">
                                     {course.level}
                                 </span>
+                                {course.isGenerated && (
+                                    <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-100 to-indigo-100 text-indigo-700 border border-indigo-100">
+                                        <Sparkles className="w-3 h-3" />
+                                        Smart Generated
+                                    </span>
+                                )}
                             </div>
                             <h3 className="font-semibold text-foreground mb-1">{course.title}</h3>
                             <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{course.description}</p>
@@ -76,7 +77,22 @@ const Explore: React.FC = () => {
 
             {filteredCourses.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
-                    <p>No courses found matching "{searchTerm}"</p>
+                    <p className="mb-4">No courses found matching "{searchTerm}"</p>
+                    {searchTerm && (
+                        <div className="max-w-md mx-auto bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-6 rounded-2xl shadow-lg">
+                            <Sparkles className="w-8 h-8 mx-auto mb-3 text-yellow-300" />
+                            <h3 className="font-bold text-lg mb-2">Want to learn {searchTerm}?</h3>
+                            <p className="text-indigo-100 text-sm mb-4">
+                                Our AI can build a custom curriculum for you in seconds.
+                            </p>
+                            <button
+                                onClick={() => navigate(`/course/dynamic-${searchTerm.toLowerCase().replace(/\s+/g, '-')}`)}
+                                className="bg-white text-indigo-600 px-6 py-2 rounded-full font-bold hover:bg-indigo-50 transition-colors shadow-sm"
+                            >
+                                Generate Roadmap
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

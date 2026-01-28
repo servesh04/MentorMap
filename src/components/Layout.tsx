@@ -3,13 +3,14 @@ import { Outlet, NavLink } from 'react-router-dom';
 import { LayoutDashboard, Compass, User } from 'lucide-react';
 import clsx from 'clsx';
 import { ThemeToggle } from './ThemeToggle';
+import Logo from './Logo';
 
 const Layout: React.FC = () => {
     return (
         <div className="flex flex-col h-screen bg-background text-foreground transition-colors duration-300">
             {/* Top Navigation */}
             <header className="px-6 py-4 flex items-center justify-between border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-40">
-                <span className="font-bold text-xl tracking-tight text-primary">MentorMap</span>
+                <Logo className="w-32" />
                 <ThemeToggle />
             </header>
 

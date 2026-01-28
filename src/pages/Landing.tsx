@@ -4,6 +4,7 @@ import { ArrowRight, Code, Trophy, Target, Zap, BookOpen, Users, Terminal } from
 import { useStore } from '../store/useStore';
 import SpotlightCard from '../components/ui/SpotlightCard';
 import { ThemeToggle } from '../components/ThemeToggle';
+import Logo from '../components/Logo';
 
 
 const Landing: React.FC = () => {
@@ -31,10 +32,7 @@ const Landing: React.FC = () => {
             <nav className="fixed w-full z-50 top-0 left-0 border-b border-border bg-background/80 backdrop-blur-xl">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
-                            <Code className="text-primary" size={20} />
-                        </div>
-                        <span className="font-bold text-xl tracking-tight">MentorMap</span>
+                        <Logo className="w-32 hover:opacity-90 transition-opacity" />
                     </div>
                     <div className="flex items-center gap-6">
                         <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden md:block">Features</a>

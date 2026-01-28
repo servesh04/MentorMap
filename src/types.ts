@@ -23,4 +23,5 @@ export interface Course {
     level: 'Beginner' | 'Intermediate' | 'Advanced';
     thumbnail: string;
     modules: Module[];
+    isGenerated?: boolean;
 }
