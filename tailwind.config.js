@@ -6,12 +6,14 @@ export default {
     ],
     theme: {
         extend: {
-            colors: {
-                primary: '#4F46E5', // Indigo 600
-                secondary: '#10B981', // Emerald 500
-                background: '#F9FAFB', // Gray 50
-                surface: '#FFFFFF',
-            },
+            primary: 'var(--primary)',
+            secondary: 'var(--secondary)',
+            background: 'var(--background)',
+            foreground: 'var(--foreground)',
+            surface: 'var(--card)',
+            card: 'var(--card)',
+            muted: 'var(--muted)',
+            border: 'var(--border)',
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],
             },

@@ -1,21 +1,12 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useCourses } from '../hooks/useCourses';
-import { courseService } from '../services/courseService';
-import { Loader, Clock, Award, Code, Terminal, Coffee } from 'lucide-react';
+import { Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Home: React.FC = () => {
     const { currentUser, completedModules, activeCourses } = useStore();
     const { courses, loading, error } = useCourses();
-
-    const handleSeed = async () => {
-        if (confirm("Are you sure you want to re-seed the database? This might overwrite existing data.")) {
-            await courseService.seedCourses();
-            alert("Seeding complete! Refresh the page.");
-            window.location.reload();
-        }
-    };
 
     if (loading) {
         return (
@@ -36,13 +27,6 @@ const Home: React.FC = () => {
 
     return (
         <div className="p-6 relative">
-            {/* Seed Button (Dev only) */}
-            <div className="fixed bottom-24 right-4 z-50">
-                <button onClick={handleSeed} className="bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-50 hover:opacity-100 shadow-lg">
-                    Dev: Seed DB
-                </button>
-            </div>
-
             <header className="mb-8">
                 <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
                 <p className="text-muted-foreground">Welcome back, {currentUser?.displayName?.split(' ')[0] || 'Learner'}!</p>

@@ -99,7 +99,8 @@ const CourseDetail: React.FC = () => {
     };
 
     return (
-        <div className="pb-20 bg-white min-h-screen">
+
+        <div className="pb-20 bg-background min-h-screen text-foreground">
             {/* Header Image */}
             <div
                 className="h-64 w-full bg-cover bg-center relative"
@@ -107,20 +108,20 @@ const CourseDetail: React.FC = () => {
             >
                 <button
                     onClick={() => navigate(-1)}
-                    className="absolute top-4 left-4 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-md z-10"
+                    className="absolute top-4 left-4 w-10 h-10 bg-card/90 rounded-full flex items-center justify-center shadow-md z-10"
                 >
-                    <ArrowLeft className="w-5 h-5 text-gray-900" />
+                    <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                <div className="absolute bottom-6 left-6 right-6 text-white">
-                    <span className="inline-block px-2 py-1 bg-white/20 backdrop-blur-md rounded-md text-xs font-medium mb-2">
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+                <div className="absolute bottom-6 left-6 right-6 text-foreground">
+                    <span className="inline-block px-2 py-1 bg-card/20 backdrop-blur-md rounded-md text-xs font-medium mb-2 border border-white/10">
                         {course.level}
                     </span>
-                    <h1 className="text-2xl font-bold leading-tight">{course.title}</h1>
+                    <h1 className="text-2xl font-bold leading-tight drop-shadow-md">{course.title}</h1>
 
                     {/* Progress Bar */}
                     <div className="mt-4 flex items-center gap-3">
-                        <div className="flex-1 h-2 bg-white/30 rounded-full overflow-hidden backdrop-blur-sm">
+                        <div className="flex-1 h-2 bg-card/30 rounded-full overflow-hidden backdrop-blur-sm border border-white/10">
                             <div
                                 className="h-full bg-secondary transition-all duration-500 ease-out"
                                 style={{ width: `${progress}%` }}
@@ -132,7 +133,7 @@ const CourseDetail: React.FC = () => {
             </div>
 
             <div className="p-6">
-                <p className="text-gray-600 leading-relaxed mb-8">
+                <p className="text-muted-foreground leading-relaxed mb-8">
                     {course.description}
                 </p>
 
@@ -141,14 +142,14 @@ const CourseDetail: React.FC = () => {
                 ) : (
                     <>
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-bold text-gray-900 text-lg">Course Modules</h3>
+                            <h3 className="font-bold text-foreground text-lg">Course Modules</h3>
 
-                            <div className="bg-gray-100 p-1 rounded-lg flex items-center">
+                            <div className="bg-muted p-1 rounded-lg flex items-center">
                                 <button
                                     onClick={() => setViewMode('list')}
                                     className={clsx(
                                         "p-2 rounded-md transition-all",
-                                        viewMode === 'list' ? "bg-white shadow-sm text-indigo-600" : "text-gray-500 hover:text-gray-700"
+                                        viewMode === 'list' ? "bg-card shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
                                     )}
                                 >
                                     <LayoutList size={20} />
@@ -157,7 +158,7 @@ const CourseDetail: React.FC = () => {
                                     onClick={() => setViewMode('roadmap')}
                                     className={clsx(
                                         "p-2 rounded-md transition-all",
-                                        viewMode === 'roadmap' ? "bg-white shadow-sm text-indigo-600" : "text-gray-500 hover:text-gray-700"
+                                        viewMode === 'roadmap' ? "bg-card shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
                                     )}
                                 >
                                     <MapIcon size={20} />
@@ -174,24 +175,24 @@ const CourseDetail: React.FC = () => {
                                             key={module.id}
                                             className={clsx(
                                                 "flex items-center p-4 rounded-xl border transition-colors cursor-pointer",
-                                                isCompleted ? "bg-indigo-50 border-indigo-100" : "bg-gray-50 border-gray-100"
+                                                isCompleted ? "bg-primary/5 border-primary/20" : "bg-card border-border hover:border-primary/50"
                                             )}
                                             onClick={() => handleRoadmapNodeClick(module.id)}
                                         >
                                             <div className={clsx(
                                                 "w-6 h-6 rounded-md flex items-center justify-center border mr-4 transition-colors",
-                                                isCompleted ? "bg-indigo-600 border-indigo-600" : "bg-white border-gray-300"
+                                                isCompleted ? "bg-primary border-primary text-primary-foreground" : "bg-muted border-border text-muted-foreground"
                                             )}>
-                                                {isCompleted && <CheckCircle className="w-4 h-4 text-white" />}
+                                                {isCompleted && <CheckCircle className="w-4 h-4" />}
                                             </div>
                                             <div className="flex-1">
                                                 <h4 className={clsx(
                                                     "text-sm font-semibold transition-colors",
-                                                    isCompleted ? "text-indigo-900" : "text-gray-900"
+                                                    isCompleted ? "text-primary" : "text-foreground"
                                                 )}>
                                                     {module.title}
                                                 </h4>
-                                                <div className="flex items-center text-xs text-gray-500 mt-1">
+                                                <div className="flex items-center text-xs text-muted-foreground mt-1">
                                                     {module.type === 'video' ? <PlayCircle className="w-3 h-3 mr-1" /> : <FileText className="w-3 h-3 mr-1" />}
                                                     {module.duration}
                                                 </div>
@@ -214,11 +215,11 @@ const CourseDetail: React.FC = () => {
             </div>
 
             {/* Fixed Bottom Enrollment Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 safe-area-bottom z-40">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border safe-area-bottom z-40">
                 <button
                     onClick={handleEnroll}
                     disabled={enrolling || isEnrolled}
-                    className={`w-full py-4 rounded-xl font-bold text-white shadow-lg shadow-indigo-200 transition-all active:scale-95 ${isEnrolled ? 'bg-green-500 hover:bg-green-600' : 'bg-primary hover:bg-indigo-700'
+                    className={`w-full py-4 rounded-xl font-bold text-white shadow-lg shadow-primary/20 transition-all active:scale-95 ${isEnrolled ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-primary hover:bg-primary/90'
                         }`}
                 >
                     {isEnrolled ? (

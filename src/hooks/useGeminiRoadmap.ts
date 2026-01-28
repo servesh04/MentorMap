@@ -48,6 +48,7 @@ Structure:
     { 
       "id": "string (unique)", 
       "title": "string", 
+      "description": "string (brief summary of what will be covered)",
       "type": "video", 
       "duration": "string (e.g. 10 min)" 
     }
@@ -55,6 +56,7 @@ Structure:
 }
 The 'id' should be unique (e.g., 'step-1', 'step-2').
 The 'title' should be descriptive.
+The 'description' should be a 1-2 sentence summary of the module.
 Create at least 5-7 modules covering beginner to advanced concepts.
             `;
 
@@ -103,9 +105,9 @@ Create at least 5-7 modules covering beginner to advanced concepts.
 
                 // Fallback (Optional: You could remove this if you prefer to show the error)
                 setModules([
-                    { id: 'fallback-1', title: `${topic} - Introduction`, type: 'video', duration: '10 min' },
-                    { id: 'fallback-2', title: `${topic} - Core Concepts`, type: 'video', duration: '15 min' },
-                    { id: 'fallback-3', title: `${topic} - Advanced Topics`, type: 'video', duration: '20 min' }
+                    { id: 'fallback-1', title: `${topic} - Introduction`, description: `Introduction to ${topic} concepts.`, type: 'video', duration: '10 min' },
+                    { id: 'fallback-2', title: `${topic} - Core Concepts`, description: `Deep dive into core ${topic} principles.`, type: 'video', duration: '15 min' },
+                    { id: 'fallback-3', title: `${topic} - Advanced Topics`, description: `Mastering advanced techniques in ${topic}.`, type: 'video', duration: '20 min' }
                 ]);
 
             } finally {

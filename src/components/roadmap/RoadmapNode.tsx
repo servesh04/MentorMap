@@ -1,77 +1,51 @@
-import React from 'react';
-import { CheckCircle, Lock, Play, Star } from 'lucide-react';
-import type { Module } from '../../types';
+import React, { memo } from 'react';
+import { Handle, Position } from '@xyflow/react';
+import { CheckCircle, Circle, PlayCircle, Lock } from 'lucide-react';
 import clsx from 'clsx';
 
-interface RoadmapNodeProps {
-    module: Module;
-    status: 'locked' | 'active' | 'completed';
-    onClick: () => void;
-    isLast: boolean;
-    index: number;
-}
-
-const RoadmapNode: React.FC<RoadmapNodeProps> = ({ module, status, onClick, isLast, index }) => {
-    const isLeft = index % 2 === 0;
+const RoadmapNode = ({ data, selected }: any) => {
+    const { title, isCompleted, isCurrent, isLocked } = data;
 
     return (
-        <div className={clsx("relative flex items-center justify-center py-8 w-full", isLeft ? "flex-row" : "flex-row-reverse")}>
+        <div className={clsx(
+            "relative px-6 py-3 rounded-full shadow-lg transition-all duration-300 min-w-[200px] flex items-center gap-3 backdrop-blur-md",
+            selected ? "ring-2 ring-primary bg-card scale-105" : "bg-card border border-border hover:border-primary/50 hover:scale-105",
+            isCompleted && "border-primary/50",
+            (isCurrent && !isCompleted) && "border-primary ring-1 ring-primary/50 animate-pulse-slow",
+            isLocked && "opacity-70 border-border bg-muted"
+        )}>
+            {/* Input Handle (Top) */}
+            <Handle type="target" position={Position.Top} className="!bg-transparent !border-0" />
 
-            {/* Center Line Connection */}
-            {!isLast && (
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 w-1 bg-gray-200 h-full -z-10 mt-8" />
-            )}
-
-            {/* Content Box */}
-            <div
-                className={clsx(
-                    "w-5/12 p-4 rounded-xl border transition-all duration-300 relative group",
-                    status === 'locked' && "bg-gray-50 border-gray-200 opacity-70",
-                    status === 'active' && "bg-white border-indigo-500 shadow-lg scale-105 z-10 cursor-pointer hover:shadow-indigo-200",
-                    status === 'completed' && "bg-indigo-50 border-indigo-200 cursor-pointer hover:bg-indigo-100"
-                )}
-                onClick={status !== 'locked' ? onClick : undefined}
-            >
-                {/* Connector Line to Center */}
-                <div className={clsx(
-                    "absolute top-1/2 w-full h-[2px] -z-20",
-                    isLeft ? "-right-[20%] bg-gradient-to-r from-transparent to-gray-200" : "-left-[20%] bg-gradient-to-l from-transparent to-gray-200"
-                )} />
-
-                <div className="flex items-start gap-3">
-                    <div className={clsx(
-                        "p-2 rounded-lg flex-shrink-0 transition-colors",
-                        status === 'active' ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-400",
-                        status === 'completed' && "bg-green-500 text-white"
-                    )}>
-                        {status === 'completed' ? <CheckCircle size={20} /> :
-                            status === 'locked' ? <Lock size={20} /> :
-                                module.type === 'quiz' ? <Star size={20} /> : <Play size={20} />
-                        }
-                    </div>
-                    <div>
-                        <h4 className={clsx("font-bold text-sm", status === 'locked' ? "text-gray-500" : "text-gray-900")}>
-                            {module.title}
-                        </h4>
-                        <div className="flex items-center text-xs text-gray-500 mt-1 gap-2">
-                            <span>{module.type.toUpperCase()}</span>
-                            <span>•</span>
-                            <span>{module.duration}</span>
-                        </div>
-                    </div>
-                </div>
+            {/* Icon Status */}
+            <div className={clsx(
+                "w-8 h-8 rounded-full flex items-center justify-center border shrink-0 transition-colors",
+                isCompleted ? "bg-primary/10 border-primary text-primary" :
+                    isCurrent ? "bg-primary/10 border-primary text-primary" :
+                        "bg-muted border-border text-muted-foreground"
+            )}>
+                {isCompleted ? <CheckCircle size={16} /> :
+                    (isCurrent && !isLocked) ? <PlayCircle size={16} /> :
+                        isLocked ? <Lock size={16} /> :
+                            <Circle size={16} />}
             </div>
 
-            {/* Center Node Dot */}
-            <div className={clsx(
-                "absolute left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full border-2 z-0",
-                status === 'completed' ? "bg-green-500 border-green-500" :
-                    status === 'active' ? "bg-indigo-600 border-indigo-600 animate-pulse" :
-                        "bg-white border-gray-300"
-            )} />
+            {/* Title */}
+            <div className="flex-1">
+                <h3 className={clsx(
+                    "text-sm font-medium leading-tight",
+                    isCompleted ? "text-primary" :
+                        isCurrent ? "text-foreground" :
+                            "text-muted-foreground"
+                )}>
+                    {title}
+                </h3>
+            </div>
 
+            {/* Output Handle (Bottom) */}
+            <Handle type="source" position={Position.Bottom} className="!bg-transparent !border-0" />
         </div>
     );
 };
 
-export default RoadmapNode;
+export default memo(RoadmapNode);

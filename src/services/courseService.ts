@@ -19,36 +19,33 @@ export const courseService = {
 
     // Fetch single course by ID
     async getCourseById(id: string): Promise<Course | null> {
-        // Handle Dynamic Courses
-        if (id.startsWith('dynamic-')) {
-            const searchTerm = id.replace('dynamic-', '').split('-').map(word =>
-                word.charAt(0).toUpperCase() + word.slice(1)
-            ).join(' '); // "dynamic-react-native" -> "React Native"
-
-            return {
-                id: id,
-                title: `Learn ${searchTerm}`,
-                description: `AI-generated learning path for ${searchTerm}.`,
-                level: 'Beginner',
-                thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3', // Generic tech background
-                modules: [
-                    { id: 'm-basics', title: `${searchTerm} Basics`, type: 'video', duration: '10 min' },
-                    { id: 'm-intermediate', title: `Intermediate ${searchTerm}`, type: 'video', duration: '20 min' },
-                    { id: 'm-advanced', title: `Advanced ${searchTerm}`, type: 'video', duration: '30 min' }
-                ],
-                isGenerated: true
-            };
-        }
-
         try {
+            // 1. Try to fetch from Database first
             const docRef = doc(db, COURSES_COLLECTION, id);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
                 return { id: docSnap.id, ...docSnap.data() } as Course;
-            } else {
-                return null;
             }
+
+            // 2. If not found in DB, check if it's a dynamic request that needs generation
+            if (id.startsWith('dynamic-')) {
+                const searchTerm = id.replace('dynamic-', '').split('-').map(word =>
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' '); // "dynamic-react-native" -> "React Native"
+
+                return {
+                    id: id,
+                    title: `Learn ${searchTerm}`,
+                    description: `AI-generated learning path for ${searchTerm}.`,
+                    level: 'Beginner',
+                    thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+                    modules: [], // Start empty, let AI fill it
+                    isGenerated: true
+                };
+            }
+
+            return null;
         } catch (error) {
             console.error("Error fetching course:", error);
             throw error;

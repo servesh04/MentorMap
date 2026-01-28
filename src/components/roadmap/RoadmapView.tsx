@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
+import { ReactFlow, Background, ReactFlowProvider, useNodesState, useEdgesState, Controls } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import type { Module } from '../../types';
 import RoadmapNode from './RoadmapNode';
+import { generateRoadmapLayout } from '../../utils/roadmapLayout';
 
 interface RoadmapViewProps {
     modules: Module[];
@@ -8,46 +11,50 @@ interface RoadmapViewProps {
     onModuleClick: (moduleId: string) => void;
 }
 
+const nodeTypes = {
+    roadmapNode: RoadmapNode,
+};
+
 const RoadmapView: React.FC<RoadmapViewProps> = ({ modules, completedModuleIds, onModuleClick }) => {
 
-    const getModuleStatus = (index: number, module: Module) => {
-        const isCompleted = completedModuleIds.includes(module.id);
-        if (isCompleted) return 'completed';
+    // 1. Generate Layout
+    const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
+        return generateRoadmapLayout(modules, completedModuleIds);
+    }, [modules, completedModuleIds]);
 
-        // If it's the first module, or the previous module is completed, it's active
-        if (index === 0) return 'active';
-        const prevModule = modules[index - 1];
-        if (completedModuleIds.includes(prevModule.id)) return 'active';
+    // 2. Flow State
+    const [nodes, , onNodesChange] = useNodesState(initialNodes);
+    const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
-        return 'locked';
-    };
+    // 3. Handle Click
+    const onNodeClick = useCallback((event: any, node: any) => {
+        onModuleClick(node.id);
+    }, [onModuleClick]);
 
     return (
-        <div className="py-10 max-w-3xl mx-auto relative px-4">
-            {/* Main Vertical Scanline */}
-            <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gray-100 -z-20" />
-
-            <div className="space-y-0">
-                {modules.map((module, index) => (
-                    <RoadmapNode
-                        key={module.id}
-                        index={index}
-                        module={module}
-                        status={getModuleStatus(index, module)}
-                        onClick={() => onModuleClick(module.id)}
-                        isLast={index === modules.length - 1}
-                    />
-                ))}
-            </div>
-
-            {/* Finish Line */}
-            <div className="mt-8 text-center">
-                <div className="inline-block px-6 py-2 bg-gray-900 text-white rounded-full text-sm font-bold shadow-lg z-10 relative">
-                    Goal Reached 🏁
-                </div>
-            </div>
+        <div className="h-[600px] w-full bg-background border border-border rounded-2xl overflow-hidden shadow-inner">
+            <ReactFlow
+                nodes={initialNodes} // Use memoized directly to ensure updates from props reflect immediately
+                edges={initialEdges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onNodeClick={onNodeClick}
+                nodeTypes={nodeTypes}
+                fitView
+                minZoom={0.5}
+                maxZoom={1.5}
+                proOptions={{ hideAttribution: true }}
+                className="bg-background"
+            >
+                <Background color="var(--muted-foreground)" gap={20} size={1} className="opacity-20" />
+                <Controls className="!bg-card !border-border !fill-muted-foreground [&>button]:!fill-muted-foreground [&>button:hover]:!bg-muted" />
+            </ReactFlow>
         </div>
     );
 };
 
-export default RoadmapView;
+export default (props: RoadmapViewProps) => (
+    <ReactFlowProvider>
+        <RoadmapView {...props} />
+    </ReactFlowProvider>
+);
