@@ -8,6 +8,7 @@ import ResourceRecommender from '../components/ResourceRecommender';
 import clsx from 'clsx';
 import RoadmapView from '../components/roadmap/RoadmapView';
 import QuizModal from '../modals/QuizModal';
+import StepDetailDrawer from '../components/roadmap/StepDetailDrawer';
 import type { Module, Course } from '../types';
 import { courseService } from '../services/courseService';
 import DynamicCourseView from './DynamicCourseView';
@@ -19,6 +20,8 @@ const CourseDetail: React.FC = () => {
     const [enrolling, setEnrolling] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'roadmap'>('list');
     const [selectedQuizModule, setSelectedQuizModule] = useState<Module | null>(null);
+    const [selectedDrawerModule, setSelectedDrawerModule] = useState<Module | null>(null);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
@@ -82,9 +85,8 @@ const CourseDetail: React.FC = () => {
         if (module.type === 'quiz') {
             setSelectedQuizModule(module);
         } else {
-            // For video modules, just toggle completion for now (simulating watching)
-            // In a real app, this would open the video player
-            toggleModuleCompletion(course.id, module.id);
+            setSelectedDrawerModule(module);
+            setIsDrawerOpen(true);
         }
     };
 
@@ -96,6 +98,11 @@ const CourseDetail: React.FC = () => {
             }
             setSelectedQuizModule(null);
         }
+    };
+
+    const handleCloseDrawer = () => {
+        setIsDrawerOpen(false);
+        setSelectedDrawerModule(null);
     };
 
     return (
@@ -206,6 +213,7 @@ const CourseDetail: React.FC = () => {
                                 modules={course.modules}
                                 completedModuleIds={courseCompletedModules}
                                 onModuleClick={handleRoadmapNodeClick}
+                                courseId={course.id}
                             />
                         )}
 
@@ -240,6 +248,14 @@ const CourseDetail: React.FC = () => {
                     onPass={handleQuizPass}
                 />
             )}
+
+            {/* Detail Drawer */}
+            <StepDetailDrawer
+                isOpen={isDrawerOpen}
+                onClose={handleCloseDrawer}
+                module={selectedDrawerModule}
+                courseId={course.id}
+            />
         </div>
     );
 };

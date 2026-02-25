@@ -1,20 +1,33 @@
-import React, { useEffect, useState } from 'react';
-import { X, Youtube, BookOpen } from 'lucide-react';
+import React from 'react';
+import { X, Youtube, BookOpen, CheckCircle, Circle } from 'lucide-react';
 import { useYouTubeSearch } from '../../hooks/useYouTubeSearch';
 import ResourceList from './ResourceList';
 import clsx from 'clsx';
+import { useStore } from '../../store/useStore';
 import type { Module } from '../../types';
 
 interface StepDetailDrawerProps {
     isOpen: boolean;
     onClose: () => void;
     module: Module | null;
+    courseId?: string;
 }
 
-const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, module }) => {
+const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, module, courseId }) => {
     // Only search if we have an open module
     const searchQuery = module ? `${module.title} tutorial` : '';
-    const { video, loading: videoLoading, error: videoError } = useYouTubeSearch(isOpen ? searchQuery : '');
+    const { video, loading: videoLoading } = useYouTubeSearch(isOpen ? searchQuery : '');
+
+
+    // For completion tracking right from the drawer
+    const store = useStore();
+    const isCompleted = module && courseId ? (store.completedModules[courseId] || []).includes(module.id) : false;
+
+    const handleToggleComplete = () => {
+        if (courseId && module) {
+            store.toggleModuleCompletion(courseId, module.id);
+        }
+    };
 
     return (
         <div className={clsx(
@@ -23,7 +36,7 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
         )}>
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-border bg-card">
-                <div>
+                <div className="flex-1 pr-4">
                     <h2 className="text-xl font-bold text-card-foreground line-clamp-1">
                         {module?.title || "Step Details"}
                     </h2>
@@ -31,12 +44,29 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
                         {module?.duration} • {module?.type === 'video' ? 'Video Lesson' : 'Quiz'}
                     </p>
                 </div>
-                <button
-                    onClick={onClose}
-                    className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground"
-                >
-                    <X size={24} />
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                    {courseId && module && module.type !== 'quiz' && (
+                        <button
+                            onClick={handleToggleComplete}
+                            className={clsx(
+                                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border",
+                                isCompleted
+                                    ? "bg-primary/10 text-primary border-primary/20 hover:bg-red-500 hover:text-white hover:border-red-500"
+                                    : "bg-card text-muted-foreground border-border hover:border-primary hover:text-primary"
+                            )}
+                            title={isCompleted ? "Mark as Incomplete" : "Mark as Complete"}
+                        >
+                            {isCompleted ? <CheckCircle size={16} /> : <Circle size={16} />}
+                            <span className="hidden sm:inline">{isCompleted ? "Completed" : "Mark Complete"}</span>
+                        </button>
+                    )}
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground ml-2"
+                    >
+                        <X size={24} />
+                    </button>
+                </div>
             </div>
 
             {/* Content Scroll Area */}

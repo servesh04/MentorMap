@@ -1,14 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ReactFlow, Background, Position, ReactFlowProvider, useNodesState, useEdgesState, Controls } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-
+import React, { useState, useEffect } from 'react';
 import type { Course, Module } from '../types';
 import { useGeminiRoadmap } from '../hooks/useGeminiRoadmap';
 import { courseService } from '../services/courseService';
+import { useStore } from '../store/useStore';
 import RoadmapNode from '../components/roadmap/RoadmapNode';
 import StepDetailDrawer from '../components/roadmap/StepDetailDrawer';
-import { generateRoadmapLayout } from '../utils/roadmapLayout';
-import clsx from 'clsx';
 import { Sparkles, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,12 +12,12 @@ interface DynamicCourseViewProps {
     course: Course;
 }
 
-const nodeTypes = {
-    roadmapNode: RoadmapNode,
-};
-
 const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
     const navigate = useNavigate();
+    const store = useStore();
+
+    // Retrieve completed module IDs for this course from the store
+    const completedModuleIds = store.completedModules[course.id] || [];
 
     // 1. Logic & Data Fetching
     const topic = course.title.replace('Learn ', '');
@@ -30,15 +26,11 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
     // Prefer generated modules if available, else usage course.modules
     const [modules, setModules] = useState<Module[]>(course.modules);
 
-    // 2. React Flow State
-    const [nodes, setNodes, onNodesChange] = useNodesState([]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
-    // 3. Drawer State
+    // 2. Drawer State
     const [selectedModule, setSelectedModule] = useState<Module | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-    // 4. Update modules when AI finishes
+    // 3. Update modules when AI finishes
     useEffect(() => {
         if (generatedModules.length > 0) {
             setModules(generatedModules);
@@ -51,28 +43,11 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
         }
     }, [generatedModules, course]);
 
-    // 5. Layout Calculation using useMemo to avoid re-renders
-    const layout = useMemo(() => {
-        if (modules.length === 0) return { nodes: [], edges: [] };
-        // We'll treat the first module as "current" effectively for the visual
-        return generateRoadmapLayout(modules, []);
-    }, [modules]);
-
-    // 6. Sync Layout to Flow State
-    useEffect(() => {
-        setNodes(layout.nodes);
-        setEdges(layout.edges);
-    }, [layout, setNodes, setEdges]);
-
-
-    // 7. Handlers
-    const onNodeClick = useCallback((event: any, node: any) => {
-        const module = modules.find(m => m.id === node.id);
-        if (module) {
-            setSelectedModule(module);
-            setIsDrawerOpen(true);
-        }
-    }, [modules]);
+    // 4. Handlers
+    const handleModuleClick = (module: Module) => {
+        setSelectedModule(module);
+        setIsDrawerOpen(true);
+    };
 
     const handleCloseDrawer = () => {
         setIsDrawerOpen(false);
@@ -82,21 +57,25 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
     return (
         <div className="h-screen w-full bg-background text-foreground relative overflow-hidden flex flex-col">
 
-            {/* Header / Loading Overlay */}
-            <div className="absolute top-0 left-0 right-0 z-10 p-6 flex justify-between items-start pointer-events-none">
+            {/* Header / Loading Overlay - STICKY */}
+            <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border p-4 flex justify-between items-center transition-all">
                 <button
                     onClick={() => navigate('/explore')}
-                    className="pointer-events-auto flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors bg-card/50 px-4 py-2 rounded-full backdrop-blur-md border border-border"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors px-4 py-2 rounded-full hover:bg-card border border-transparent hover:border-border"
                 >
-                    <ArrowLeft size={16} /> Back
+                    <ArrowLeft size={16} /> <span className="text-sm font-medium">Back</span>
                 </button>
 
-                {loading && (
-                    <div className="pointer-events-auto bg-primary/10 border border-primary/20 text-primary px-4 py-2 rounded-full backdrop-blur-md flex items-center gap-2 animate-pulse">
-                        <Sparkles size={16} />
-                        <span className="text-xs font-semibold">AI is curating your path...</span>
+                <h1 className="text-lg font-bold text-foreground truncate max-w-md mx-4 hidden md:block">
+                    {course.title}
+                </h1>
+
+                {loading ? (
+                    <div className="bg-primary/10 border border-primary/20 text-primary px-3 py-1.5 rounded-full flex items-center gap-2 animate-pulse">
+                        <Sparkles size={14} />
+                        <span className="text-xs font-semibold">Curating...</span>
                     </div>
-                )}
+                ) : <div className="w-20" /> /* Spacer */}
             </div>
 
             {/* ERROR State */}
@@ -106,24 +85,49 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
                 </div>
             )}
 
-            {/* React Flow Canvas */}
-            <div className="flex-1 w-full h-full">
-                <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
-                    onNodeClick={onNodeClick}
-                    nodeTypes={nodeTypes}
-                    fitView
-                    minZoom={0.5}
-                    maxZoom={1.5}
-                    proOptions={{ hideAttribution: true }}
-                    className="bg-background"
-                >
-                    <Background color="var(--muted-foreground)" gap={20} size={1} className="opacity-20" />
-                    <Controls className="!bg-card !border-border !fill-muted-foreground [&>button]:!fill-muted-foreground [&>button:hover]:!bg-muted" />
-                </ReactFlow>
+            {/* Roadmap DOM Canvas */}
+            <div className="flex-1 w-full h-full overflow-y-auto px-4 py-12 md:py-20 scrollbar-hide">
+                <div className="flex flex-col items-center relative max-w-3xl mx-auto">
+                    {modules.map((module, index) => {
+                        const isCompleted = completedModuleIds.includes(module.id);
+                        // A module is "current" if it's not completed, and it's either the first module, 
+                        // or the previous module is completed.
+                        const isCurrent = !isCompleted && (index === 0 || completedModuleIds.includes(modules[index - 1].id));
+                        // Locked if not completed and not current
+                        const isLocked = !isCompleted && !isCurrent;
+
+                        return (
+                            <React.Fragment key={module.id}>
+                                <div className="w-full">
+                                    <RoadmapNode
+                                        module={module}
+                                        isCompleted={isCompleted}
+                                        isCurrent={isCurrent}
+                                        isLocked={isLocked}
+                                        courseId={course.id}
+                                        onClick={() => handleModuleClick(module)}
+                                        isSelected={selectedModule?.id === module.id}
+                                    />
+                                </div>
+
+                                {/* Connecting Line (except after the last item) */}
+                                {index < modules.length - 1 && (
+                                    <div className="h-12 md:h-16 w-0.5 relative my-2">
+                                        <div
+                                            className={`absolute inset-0 border-l-2 border-dashed ${completedModuleIds.includes(module.id) ? 'border-primary/50' : 'border-border'}`}
+                                        />
+                                    </div>
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
+
+                    {modules.length === 0 && !loading && (
+                        <div className="text-center text-muted-foreground p-12 bg-card rounded-2xl border border-border shadow-sm w-full max-w-md">
+                            No modules available for this course yet.
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Detail Drawer */}
@@ -131,14 +135,10 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
                 isOpen={isDrawerOpen}
                 onClose={handleCloseDrawer}
                 module={selectedModule}
+                courseId={course.id}
             />
         </div>
     );
 };
 
-// Wrap in Provider to ensure internal context works if needed
-export default (props: DynamicCourseViewProps) => (
-    <ReactFlowProvider>
-        <DynamicCourseView {...props} />
-    </ReactFlowProvider>
-);
+export default DynamicCourseView;
