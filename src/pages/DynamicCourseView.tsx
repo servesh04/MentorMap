@@ -7,6 +7,7 @@ import RoadmapNode from '../components/roadmap/RoadmapNode';
 import StepDetailDrawer from '../components/roadmap/StepDetailDrawer';
 import { Sparkles, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import clsx from 'clsx';
 
 interface DynamicCourseViewProps {
     course: Course;
@@ -54,6 +55,11 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
         setSelectedModule(null);
     };
 
+    const getNodePositionClasses = (index: number) => {
+        if (index === 0) return 'translate-x-0';
+        return index % 2 === 0 ? 'translate-x-0 md:-translate-x-32 xl:-translate-x-48' : 'translate-x-0 md:translate-x-32 xl:translate-x-48';
+    };
+
     return (
         <div className="h-screen w-full bg-background text-foreground relative overflow-hidden flex flex-col">
 
@@ -61,7 +67,7 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
             <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border p-4 flex justify-between items-center transition-all">
                 <button
                     onClick={() => navigate('/explore')}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors px-4 py-2 rounded-full hover:bg-card border border-transparent hover:border-border"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors px-4 py-2 rounded-full hover:bg-muted border border-transparent hover:border-border"
                 >
                     <ArrowLeft size={16} /> <span className="text-sm font-medium">Back</span>
                 </button>
@@ -71,7 +77,7 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
                 </h1>
 
                 {loading ? (
-                    <div className="bg-primary/10 border border-primary/20 text-primary px-3 py-1.5 rounded-full flex items-center gap-2 animate-pulse">
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 px-3 py-1.5 rounded-full flex items-center gap-2 animate-pulse">
                         <Sparkles size={14} />
                         <span className="text-xs font-semibold">Curating...</span>
                     </div>
@@ -86,19 +92,30 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
             )}
 
             {/* Roadmap DOM Canvas */}
-            <div className="flex-1 w-full h-full overflow-y-auto px-4 py-12 md:py-20 scrollbar-hide">
-                <div className="flex flex-col items-center relative max-w-3xl mx-auto">
+            <div className="flex-1 w-full h-full overflow-y-auto px-4 py-12 md:py-20 scrollbar-hide relative">
+                {/* Dotted Background */}
+                <div
+                    className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20 text-slate-300 dark:text-slate-600"
+                    style={{
+                        backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)',
+                        backgroundSize: '24px 24px'
+                    }}
+                />
+
+                <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
                     {modules.map((module, index) => {
                         const isCompleted = completedModuleIds.includes(module.id);
-                        // A module is "current" if it's not completed, and it's either the first module, 
-                        // or the previous module is completed.
                         const isCurrent = !isCompleted && (index === 0 || completedModuleIds.includes(modules[index - 1].id));
-                        // Locked if not completed and not current
                         const isLocked = !isCompleted && !isCurrent;
 
+                        const isEven = index % 2 === 0;
+                        const isNextEven = (index + 1) % 2 === 0;
+
                         return (
-                            <React.Fragment key={module.id}>
-                                <div className="w-full">
+                            <div key={module.id} className="w-full flex justify-center flex-col items-center z-10">
+
+                                {/* Node Wrapper */}
+                                <div className={clsx("transition-transform duration-500 z-10 w-full flex justify-center", getNodePositionClasses(index))}>
                                     <RoadmapNode
                                         module={module}
                                         isCompleted={isCompleted}
@@ -110,20 +127,59 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
                                     />
                                 </div>
 
-                                {/* Connecting Line (except after the last item) */}
-                                {index < modules.length - 1 && (
-                                    <div className="h-12 md:h-16 w-0.5 relative my-2">
-                                        <div
-                                            className={`absolute inset-0 border-l-2 border-dashed ${completedModuleIds.includes(module.id) ? 'border-primary/50' : 'border-border'}`}
+                                {/* In-Flow SVG Connection to Next Node */}
+                                {index < modules.length - 1 && !loading && (
+                                    <svg
+                                        className={clsx(
+                                            "w-full h-12 md:h-24 pointer-events-none z-0 overflow-visible my-1 md:my-0",
+                                            !isCompleted && !isCurrent ? "text-slate-300 dark:text-slate-700" : ""
+                                        )}
+                                        preserveAspectRatio="none"
+                                        viewBox="0 0 100 100"
+                                    >
+                                        {/* Desktop Curve (Hidden on Mobile) */}
+                                        <path
+                                            d={
+                                                index === 0
+                                                    // From Center to Right
+                                                    ? `M 50 0 C 50 50, 75 50, 75 100`
+                                                    // From Right to Left
+                                                    : !isEven && isNextEven
+                                                        ? `M 75 0 C 75 50, 25 50, 25 100`
+                                                        // From Left to Right
+                                                        : `M 25 0 C 25 50, 75 50, 75 100`
+                                            }
+                                            fill="none"
+                                            stroke={isCompleted || isCurrent ? '#10b981' : 'currentColor'}
+                                            strokeWidth={isCompleted || isCurrent ? "4" : "2"}
+                                            strokeLinecap="round"
+                                            className={clsx(
+                                                "transition-all duration-700 hidden md:block",
+                                                isCurrent && "animate-[dash_3s_linear_infinite]"
+                                            )}
+                                            strokeDasharray={isCurrent ? "12 12" : "none"}
                                         />
-                                    </div>
+                                        {/* Mobile Straight Line */}
+                                        <line
+                                            x1="50" y1="0" x2="50" y2="100"
+                                            stroke={isCompleted || isCurrent ? '#10b981' : 'currentColor'}
+                                            strokeWidth={isCompleted || isCurrent ? "4" : "2"}
+                                            strokeLinecap="round"
+                                            className={clsx(
+                                                "md:hidden transition-all duration-700",
+                                                isCurrent && "animate-[dash_3s_linear_infinite]"
+                                            )}
+                                            strokeDasharray={isCurrent ? "12 12" : "none"}
+                                        />
+                                    </svg>
                                 )}
-                            </React.Fragment>
+
+                            </div>
                         );
                     })}
 
                     {modules.length === 0 && !loading && (
-                        <div className="text-center text-muted-foreground p-12 bg-card rounded-2xl border border-border shadow-sm w-full max-w-md">
+                        <div className="text-center text-muted-foreground p-12 bg-card rounded-2xl border border-border shadow-sm w-full max-w-md relative z-10">
                             No modules available for this course yet.
                         </div>
                     )}
@@ -137,6 +193,14 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
                 module={selectedModule}
                 courseId={course.id}
             />
+
+            <style>{`
+                @keyframes dash {
+                    to {
+                        stroke-dashoffset: -24;
+                    }
+                }
+            `}</style>
         </div>
     );
 };

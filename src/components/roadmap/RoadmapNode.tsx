@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { CheckCircle, Circle, PlayCircle, Lock } from 'lucide-react';
+import { Check, Lock, Play } from 'lucide-react';
 import clsx from 'clsx';
 import { useStore } from '../../store/useStore';
 import type { Module } from '../../types';
@@ -26,97 +26,76 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = ({
     const store = useStore();
 
     const handleToggle = (e: React.MouseEvent) => {
-        e.stopPropagation(); // CRITICAL: Stop parent click (drawer open)
-        if (courseId && module.id) {
+        e.stopPropagation();
+        if (courseId && module.id && !isLocked) {
             store.toggleModuleCompletion(courseId, module.id);
         }
     };
 
-    return (
-        <div
-            onClick={onClick}
-            className={clsx(
-                "relative px-4 py-4 md:px-6 md:py-5 rounded-xl shadow-md transition-all duration-300 w-full max-w-2xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 backdrop-blur-md group",
-                isSelected ? "ring-2 ring-primary bg-card/90 scale-[1.02]" : "bg-card/80 border border-border hover:border-primary/50 hover:bg-card hover:scale-[1.01] cursor-pointer",
-                isCompleted && "border-primary/40",
-                (isCurrent && !isCompleted) && "border-primary ring-1 ring-primary/40 shadow-primary/10",
-                isLocked && "opacity-60 border-border bg-muted/50 cursor-not-allowed hover:scale-100 hover:border-border"
-            )}
-        >
-            <div className="flex items-start md:items-center gap-4 flex-1 min-w-0">
-                {/* Icon Status (Left) */}
-                <div className={clsx(
-                    "w-10 h-10 rounded-full flex items-center justify-center border-2 shrink-0 transition-colors mt-1 md:mt-0",
-                    isCompleted ? "bg-primary/10 border-primary text-primary" :
-                        isCurrent ? "bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)]" :
-                            "bg-muted border-border text-muted-foreground"
-                )}>
-                    {isCompleted ? <CheckCircle size={20} /> :
-                        (isCurrent && !isLocked) ? <PlayCircle size={20} /> :
-                            isLocked ? <Lock size={18} /> :
-                                <Circle size={20} />}
-                </div>
+    // Strict Styling Matrix with Global Theme Support
+    const nodeStyles = clsx(
+        "relative px-4 py-4 md:px-5 md:py-4 rounded-xl shadow-lg transition-all duration-300 w-[280px] sm:w-[320px] flex items-center gap-4 group z-10",
+        isSelected && !isLocked ? "scale-105" : "hover:scale-[1.02]",
+        isLocked
+            ? "opacity-50 bg-muted border border-border text-muted-foreground cursor-not-allowed"
+            : isCurrent && !isCompleted
+                ? "bg-card border-2 border-primary shadow-[0_0_15px_rgba(16,185,129,0.3)] text-card-foreground cursor-pointer"
+                : isCompleted
+                    ? "bg-card border border-primary/50 text-card-foreground cursor-pointer"
+                    : "bg-card border border-border text-card-foreground cursor-pointer"
+    );
 
-                {/* Text Content */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className={clsx(
-                            "text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
-                            isCompleted ? "bg-primary/10 text-primary" :
-                                isCurrent ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                        )}>
-                            {module.type || 'Lesson'}
-                        </span>
-                        <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                            {module.duration} min
-                        </span>
-                    </div>
-                    <h3 className={clsx(
-                        "text-base md:text-lg font-bold leading-tight",
-                        isCompleted ? "text-foreground" :
-                            isCurrent ? "text-foreground" :
-                                "text-muted-foreground"
-                    )}>
-                        {module.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                        {module.description}
-                    </p>
-                </div>
+    const iconBgStyles = clsx(
+        "w-10 h-10 rounded-full flex items-center justify-center border shrink-0 transition-colors shadow-inner",
+        isLocked ? "bg-background border-border text-muted-foreground" :
+            isCurrent && !isCompleted ? "bg-primary/20 border-primary text-primary" :
+                isCompleted ? "bg-primary/10 border-primary/50 text-primary" :
+                    "bg-muted border-border text-muted-foreground"
+    );
+
+    return (
+        <div onClick={isLocked ? undefined : onClick} className={nodeStyles}>
+
+            {/* Status Icon (Left) */}
+            <div className={iconBgStyles}>
+                {isLocked ? <Lock size={18} /> :
+                    isCompleted ? <Check size={20} className="text-primary" /> :
+                        <Play size={18} className="translate-x-0.5" />}
             </div>
 
-            {/* Interaction Button (Right) - Only show if not locked */}
-            <div className="flex justify-end md:shrink-0 mt-2 md:mt-0">
+            {/* Text Content */}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        {module.type || 'Lesson'}
+                    </span>
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                        • {module.duration}m
+                    </span>
+                </div>
+                <h3 className="text-sm font-bold leading-tight truncate">
+                    {module.title}
+                </h3>
+            </div>
+
+            {/* Pulse Indicator / Action Button (Right) */}
+            <div className="flex justify-end shrink-0 pl-2 border-l border-border">
                 {!isLocked && (
                     <button
                         onClick={handleToggle}
                         className={clsx(
-                            "group/btn px-4 py-2 rounded-lg border transition-all z-10 flex items-center gap-2 font-medium text-sm",
+                            "w-8 h-8 rounded-full flex items-center justify-center transition-all",
                             isCompleted
-                                ? "bg-primary text-primary-foreground border-primary hover:bg-red-500 hover:border-red-500 hover:text-white"
-                                : "bg-transparent border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
+                                ? "bg-primary/10 hover:bg-destructive/20 hover:text-destructive text-primary"
+                                : "bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary"
                         )}
+                        title={isCompleted ? "Mark Incomplete" : "Mark Complete"}
                     >
-                        {isCompleted ? (
-                            <>
-                                <CheckCircle size={16} className="group-hover/btn:hidden" />
-                                <Circle size={16} className="hidden group-hover/btn:block shrink-0" />
-                                <span className="group-hover/btn:hidden">Completed</span>
-                                <span className="hidden group-hover/btn:block">Mark Incomplete</span>
-                            </>
-                        ) : (
-                            <>
-                                <Circle size={16} />
-                                <span>Mark Complete</span>
-                            </>
-                        )}
+                        {isCompleted ? <Check size={16} /> : <div className="w-3 h-3 rounded-full border-2 border-current" />}
                     </button>
                 )}
-                {isLocked && (
-                    <div className="px-4 py-2 rounded-lg border border-transparent flex items-center gap-2 font-medium text-sm text-muted-foreground">
-                        <Lock size={16} />
-                        <span>Locked</span>
-                    </div>
+                {isCurrent && !isCompleted && !isLocked && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
                 )}
             </div>
         </div>

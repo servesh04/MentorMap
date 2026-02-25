@@ -18,7 +18,7 @@ const CourseDetail: React.FC = () => {
     const navigate = useNavigate();
     const { currentUser, toggleModuleCompletion, completedModules, activeCourses, setActiveCourses } = useStore();
     const [enrolling, setEnrolling] = useState(false);
-    const [viewMode, setViewMode] = useState<'list' | 'roadmap'>('list');
+    const [viewMode, setViewMode] = useState<'list' | 'roadmap'>('roadmap');
     const [selectedQuizModule, setSelectedQuizModule] = useState<Module | null>(null);
     const [selectedDrawerModule, setSelectedDrawerModule] = useState<Module | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
