@@ -40,8 +40,8 @@
 
   .dark {
     /* Dark Mode Variables */
-    --background: #020617;
-    /* Slate 950 */
+    --background: #000000;
+    /* OLED True Black */
     --foreground: #F8FAFC;
     /* Slate 50 */
 
@@ -101,5 +101,16 @@
     @apply bg-background text-foreground antialiased;
     /* Prevent pull-to-refresh on mobile */
     overscroll-behavior-y: none;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

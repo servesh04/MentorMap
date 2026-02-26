@@ -19,15 +19,15 @@ const Layout: React.FC = () => {
                 <Outlet />
             </main>
 
-            {/* Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border safe-area-bottom z-50">
+            {/* Bottom Navigation — Glassmorphism Tab Bar */}
+            <nav className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-md border-t border-slate-800 z-50 pb-[env(safe-area-inset-bottom)]">
                 <div className="flex justify-around items-center h-16">
                     <NavLink
-                        to="/"
+                        to="/dashboard"
                         className={({ isActive }) =>
                             clsx(
-                                "flex flex-col items-center justify-center w-full h-full transition-colors",
-                                isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"
+                                "flex flex-col items-center justify-center w-full h-full transition-all duration-200 active:scale-95",
+                                isActive ? "text-primary" : "text-slate-400 hover:text-slate-300"
                             )
                         }
                     >
@@ -39,8 +39,8 @@ const Layout: React.FC = () => {
                         to="/explore"
                         className={({ isActive }) =>
                             clsx(
-                                "flex flex-col items-center justify-center w-full h-full transition-colors",
-                                isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"
+                                "flex flex-col items-center justify-center w-full h-full transition-all duration-200 active:scale-95",
+                                isActive ? "text-primary" : "text-slate-400 hover:text-slate-300"
                             )
                         }
                     >
@@ -52,8 +52,8 @@ const Layout: React.FC = () => {
                         to="/profile"
                         className={({ isActive }) =>
                             clsx(
-                                "flex flex-col items-center justify-center w-full h-full transition-colors",
-                                isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"
+                                "flex flex-col items-center justify-center w-full h-full transition-all duration-200 active:scale-95",
+                                isActive ? "text-primary" : "text-slate-400 hover:text-slate-300"
                             )
                         }
                     >

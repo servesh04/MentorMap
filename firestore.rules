@@ -27,6 +27,12 @@ service cloud.firestore {
       allow write: if isAuthenticated(); // Temporarily allow auth users to write if you are debugging
     }
 
+    // QUIZZES COLLECTION (AI-generated quiz cache)
+    match /quizzes/{quizId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

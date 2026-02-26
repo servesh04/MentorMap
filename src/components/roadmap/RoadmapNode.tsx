@@ -1,8 +1,9 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Check, Lock, Play } from 'lucide-react';
 import clsx from 'clsx';
 import { useStore } from '../../store/useStore';
 import type { Module } from '../../types';
+import QuizModal from './QuizModal';
 
 interface RoadmapNodeProps {
     module: Module;
@@ -24,10 +25,23 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = ({
     isSelected
 }) => {
     const store = useStore();
+    const [showQuiz, setShowQuiz] = useState(false);
 
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (courseId && module.id && !isLocked) {
+            if (isCompleted) {
+                // Un-completing bypasses quiz
+                store.toggleModuleCompletion(courseId, module.id);
+            } else {
+                // Completing requires passing the quiz
+                setShowQuiz(true);
+            }
+        }
+    };
+
+    const handleQuizPass = () => {
+        if (courseId && module.id) {
             store.toggleModuleCompletion(courseId, module.id);
         }
     };
@@ -54,51 +68,64 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = ({
     );
 
     return (
-        <div onClick={isLocked ? undefined : onClick} className={nodeStyles}>
+        <>
+            <div onClick={isLocked ? undefined : onClick} className={nodeStyles}>
 
-            {/* Status Icon (Left) */}
-            <div className={iconBgStyles}>
-                {isLocked ? <Lock size={18} /> :
-                    isCompleted ? <Check size={20} className="text-primary" /> :
-                        <Play size={18} className="translate-x-0.5" />}
-            </div>
-
-            {/* Text Content */}
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        {module.type || 'Lesson'}
-                    </span>
-                    <span className="text-[10px] font-medium text-muted-foreground">
-                        • {module.duration}m
-                    </span>
+                {/* Status Icon (Left) */}
+                <div className={iconBgStyles}>
+                    {isLocked ? <Lock size={18} /> :
+                        isCompleted ? <Check size={20} className="text-primary" /> :
+                            <Play size={18} className="translate-x-0.5" />}
                 </div>
-                <h3 className="text-sm font-bold leading-tight truncate">
-                    {module.title}
-                </h3>
+
+                {/* Text Content */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            {module.type || 'Lesson'}
+                        </span>
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                            • {module.duration}m
+                        </span>
+                    </div>
+                    <h3 className="text-sm font-bold leading-tight truncate">
+                        {module.title}
+                    </h3>
+                </div>
+
+                {/* Pulse Indicator / Action Button (Right) */}
+                <div className="flex justify-end shrink-0 pl-2 border-l border-border">
+                    {!isLocked && (
+                        <button
+                            onClick={handleToggle}
+                            className={clsx(
+                                "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                                isCompleted
+                                    ? "bg-primary/10 hover:bg-destructive/20 hover:text-destructive text-primary"
+                                    : "bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary"
+                            )}
+                            title={isCompleted ? "Mark Incomplete" : "Mark Complete"}
+                        >
+                            {isCompleted ? <Check size={16} /> : <div className="w-3 h-3 rounded-full border-2 border-current" />}
+                        </button>
+                    )}
+                    {isCurrent && !isCompleted && !isLocked && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                    )}
+                </div>
             </div>
 
-            {/* Pulse Indicator / Action Button (Right) */}
-            <div className="flex justify-end shrink-0 pl-2 border-l border-border">
-                {!isLocked && (
-                    <button
-                        onClick={handleToggle}
-                        className={clsx(
-                            "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                            isCompleted
-                                ? "bg-primary/10 hover:bg-destructive/20 hover:text-destructive text-primary"
-                                : "bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary"
-                        )}
-                        title={isCompleted ? "Mark Incomplete" : "Mark Complete"}
-                    >
-                        {isCompleted ? <Check size={16} /> : <div className="w-3 h-3 rounded-full border-2 border-current" />}
-                    </button>
-                )}
-                {isCurrent && !isCompleted && !isLocked && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                )}
-            </div>
-        </div>
+            {/* Quiz Modal */}
+            {courseId && (
+                <QuizModal
+                    isOpen={showQuiz}
+                    onClose={() => setShowQuiz(false)}
+                    nodeId={`${courseId}_${module.id}`}
+                    topicName={module.title}
+                    onMarkComplete={handleQuizPass}
+                />
+            )}
+        </>
     );
 };
 
