@@ -9,11 +9,15 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: [],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'CogniFlow',
-        short_name: 'CogniFlow',
-        theme_color: '#4F46E5',
+        name: 'MentorMap - AI Learning',
+        short_name: 'MentorMap',
+        description: 'AI-generated learning paths and dynamic skill trees.',
+        theme_color: '#000000',
+        background_color: '#000000',
+        display: 'standalone',
+        orientation: 'portrait',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -23,10 +27,10 @@ export default defineConfig({
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
-        ],
-        display: 'standalone'
+        ]
       }
     })
   ],

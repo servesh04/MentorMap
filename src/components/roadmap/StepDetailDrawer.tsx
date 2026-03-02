@@ -3,6 +3,7 @@ import { X, Youtube, BookOpen, CheckCircle, Circle } from 'lucide-react';
 import { useYouTubeSearch } from '../../hooks/useYouTubeSearch';
 import ResourceList from './ResourceList';
 import QuizModal from './QuizModal';
+import MentorChatWidget from './MentorChatWidget';
 import clsx from 'clsx';
 import { useStore } from '../../store/useStore';
 import type { Module } from '../../types';
@@ -138,6 +139,16 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
                         </h3>
                         <ResourceList query={searchQuery} />
                     </section>
+
+                    {/* AI Mentor Chat */}
+                    {module && (
+                        <section>
+                            <MentorChatWidget
+                                nodeTitle={module.title}
+                                currentResource={video?.title}
+                            />
+                        </section>
+                    )}
                 </div>
             </div>
 
