@@ -8,37 +8,42 @@ import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Landing from './pages/Landing';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
-
+import SplashScreen from './components/SplashScreen';
 
 import { useAuthListener } from './hooks/useAuth';
+import { useStore } from './store/useStore';
 
 const App: React.FC = () => {
   useAuthListener(); // Initialize Auth Listener (Single Instance)
+  const authLoading = useStore(state => state.authLoading);
 
   return (
-    <Router>
+    <>
+      <SplashScreen isLoading={authLoading} />
+      <Router>
 
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Landing />} />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Landing />} />
 
-        <Route element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }>
-          <Route path="/dashboard" element={<Home />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/profile" element={<Profile />} />
-        </Route>
+          <Route element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route path="/dashboard" element={<Home />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/profile" element={<Profile />} />
+          </Route>
 
-        <Route path="/course/:id" element={
-          <ProtectedRoute>
-            <CourseDetail />
-          </ProtectedRoute>
-        } />
-      </Routes>
-    </Router>
+          <Route path="/course/:id" element={
+            <ProtectedRoute>
+              <CourseDetail />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </Router>
+    </>
   );
 };
 

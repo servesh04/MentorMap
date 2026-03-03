@@ -23,7 +23,7 @@ const Explore: React.FC = () => {
     return (
         <div className="p-4 pb-24">
             {/* Sticky App Bar */}
-            <div className="sticky top-0 z-40 bg-black/80 backdrop-blur-md pt-4 pb-2 px-4 -mx-4">
+            <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md pt-4 pb-2 px-4 -mx-4 transition-colors duration-300">
                 <header className="mb-3">
                     <h1 className="text-xl font-bold text-foreground">Explore</h1>
                     <p className="text-sm text-muted-foreground">Discover new learning paths.</p>

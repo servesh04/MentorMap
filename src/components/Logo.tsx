@@ -1,6 +1,4 @@
 import React from 'react';
-import logoLight from '../assets/logo-light.png';
-import logoDark from '../assets/logo-dark.png';
 import clsx from 'clsx';
 
 interface LogoProps {
@@ -13,13 +11,13 @@ const Logo: React.FC<LogoProps> = ({ className, width }) => {
         <div className={clsx("relative", className)} style={width ? { width } : undefined}>
             {/* Show when dark mode is active */}
             <img
-                src={logoDark}
+                src="/pwa-512x512.jpg"
                 alt="MentorMap Logo"
                 className="hidden dark:block w-full h-auto object-contain"
             />
             {/* Show when light mode is active */}
             <img
-                src={logoLight}
+                src="/pwa-512x512.jpg"
                 alt="MentorMap Logo"
                 className="block dark:hidden w-full h-auto object-contain"
             />
@@ -28,3 +26,4 @@ const Logo: React.FC<LogoProps> = ({ className, width }) => {
 };
 
 export default Logo;
+
