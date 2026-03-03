@@ -2,40 +2,37 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function to check if user is authenticated
+    // Helper function: Checks if the user is actually logged in
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    // Helper function to check if user is accessing their own document
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
 
-    // USERS COLLECTION
-    // Authenticated users can read/write their own profile
+    // 1. PRIVATE USER DATA (XP, Streaks, Progress)
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      
+      match /{document=**} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
     }
 
-    // COURSES COLLECTION
-    // Anyone can read courses (public catalog)
-    // Only admins (optional future enhancement) can write
-    // For now, let's keep it read-only for clients, assuming you seed data via backend/admin script
+    // 2. THE GLOBAL CACHE (Gemini Roadmaps)
+    match /cached_roadmaps/{roadmapId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; 
+    }
+
+    // 3. COURSES COLLECTION (Public catalog)
     match /courses/{courseId} {
-      allow read: if true; 
-      allow write: if isAuthenticated(); // Temporarily allow auth users to write if you are debugging
-    }
-
-    // QUIZZES COLLECTION (AI-generated quiz cache)
-    match /quizzes/{quizId} {
       allow read: if true;
       allow write: if isAuthenticated();
     }
 
-    // Default deny
-    match /{document=**} {
-      allow read, write: if false;
+    // 4. QUIZZES COLLECTION (AI-generated quiz cache)
+    match /quizzes/{quizId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
   }
 }
