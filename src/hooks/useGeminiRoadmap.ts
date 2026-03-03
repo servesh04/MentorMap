@@ -12,8 +12,7 @@ export const useGeminiRoadmap = (topic: string, isGenerated: boolean): RoadmapRe
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchingRef = useState<string | null>(null); // Use state? No, Ref is better for non-rendering side effect tracking.
-    // Actually, let's use a Ref to track the topic we are currently fetching or have fetched.
+    // Use a Ref to track the topic we are currently fetching or have fetched.
     const fetchedTopicRef = useRef<string | null>(null);
 
     useEffect(() => {

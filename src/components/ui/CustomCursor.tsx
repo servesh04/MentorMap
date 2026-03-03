@@ -69,7 +69,7 @@ const CustomCursor: React.FC = () => {
         });
 
         // Observer for dynamic content (optional, but good for single page apps)
-        const observer = new MutationObserver((mutations) => {
+        const observer = new MutationObserver((_mutations) => {
             const newItems = document.querySelectorAll('a, button, input, textarea, select, [role="button"]');
             newItems.forEach(item => {
                 // Remove old listeners to avoid duplicates (safeguard)
