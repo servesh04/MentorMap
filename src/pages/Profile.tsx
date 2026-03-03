@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/useStore';
 import { ThemeToggle } from '../components/ThemeToggle';
+import AccountSettingsModal from '../components/AccountSettingsModal';
 import { LogOut, Settings, Bell, HelpCircle, ChevronRight } from 'lucide-react';
 
 const Profile: React.FC = () => {
@@ -13,6 +14,8 @@ const Profile: React.FC = () => {
             await logout();
         }
     };
+
+    const [showAccountSettings, setShowAccountSettings] = useState(false);
 
     return (
         <div className="p-4 pb-24">
@@ -41,7 +44,10 @@ const Profile: React.FC = () => {
                 </div>
 
                 {/* Account Settings */}
-                <button className="w-full text-left px-5 py-3.5 border-b border-border flex items-center justify-between active:bg-muted active:scale-[0.99] transition-all duration-200 text-foreground">
+                <button
+                    onClick={() => setShowAccountSettings(true)}
+                    className="w-full text-left px-5 py-3.5 border-b border-border flex items-center justify-between active:bg-muted active:scale-[0.99] transition-all duration-200 text-foreground"
+                >
                     <div className="flex items-center gap-3">
                         <Settings size={18} className="text-muted-foreground" />
                         <span className="text-sm">Account Settings</span>
@@ -79,6 +85,12 @@ const Profile: React.FC = () => {
                     <ChevronRight size={16} className="text-red-500/40" />
                 </button>
             </div>
+
+            {/* Account Settings Modal */}
+            <AccountSettingsModal
+                isOpen={showAccountSettings}
+                onClose={() => setShowAccountSettings(false)}
+            />
         </div>
     );
 };

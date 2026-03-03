@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { onAuthStateChanged, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, deleteUser } from 'firebase/auth';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { useStore } from '../store/useStore';
 
@@ -41,6 +41,8 @@ export const useAuthListener = () => {
 };
 
 export const useAuth = () => {
+    const { currentUser, setCurrentUser } = useStore();
+
     const login = async () => {
         try {
             await signInWithPopup(auth, googleProvider);
@@ -76,5 +78,33 @@ export const useAuth = () => {
         }
     };
 
-    return { login, logout, signupWithEmail, loginWithEmail };
+    const updateDisplayName = async (newName: string) => {
+        const user = auth.currentUser;
+        if (!user) throw new Error('Not authenticated');
+
+        // Update Firebase Auth profile
+        await updateProfile(user, { displayName: newName });
+
+        // Update Firestore user document
+        await setDoc(doc(db, 'users', user.uid), {
+            displayName: newName,
+        }, { merge: true });
+
+        // Refresh the Zustand store with the updated user object
+        // auth.currentUser is updated in place by updateProfile, so re-set it
+        setCurrentUser({ ...user, displayName: newName } as any);
+    };
+
+    const deleteAccount = async () => {
+        const user = auth.currentUser;
+        if (!user) throw new Error('Not authenticated');
+
+        // Delete Firestore user document first
+        await deleteDoc(doc(db, 'users', user.uid));
+
+        // Delete the Firebase Auth account
+        await deleteUser(user);
+    };
+
+    return { login, logout, signupWithEmail, loginWithEmail, updateDisplayName, deleteAccount };
 };
