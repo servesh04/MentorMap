@@ -5,7 +5,7 @@ import { auth, db, googleProvider } from '../lib/firebase';
 import { useStore } from '../store/useStore';
 
 export const useAuthListener = () => {
-    const { setCurrentUser, setUserRole, setAuthLoading, setActiveCourses } = useStore();
+    const { setCurrentUser, setUserRole, setAuthLoading, setActiveCourses, setNotificationPrefs } = useStore();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -19,6 +19,9 @@ export const useAuthListener = () => {
                         const data = userDoc.data();
                         setUserRole(data.role);
                         setActiveCourses(data.active_courses || []);
+                        if (data.notificationPrefs) {
+                            setNotificationPrefs(data.notificationPrefs);
+                        }
                     } else {
                         setUserRole(null); // Triggers onboarding
                         setActiveCourses([]);

@@ -2,6 +2,20 @@ import { create } from 'zustand';
 import type { User as MockUser, Course } from '../services/mockService';
 import type { User as FirebaseUser } from 'firebase/auth';
 
+export interface NotificationPrefs {
+    dailyReminder: boolean;
+    streakAlerts: boolean;
+    newContent: boolean;
+    quizResults: boolean;
+}
+
+const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+    dailyReminder: false,
+    streakAlerts: true,
+    newContent: false,
+    quizResults: true,
+};
+
 interface AppState {
     // Legacy/Mock Data
     user: MockUser | null;
@@ -29,6 +43,10 @@ interface AppState {
     // Enrolled Courses
     activeCourses: string[];
     setActiveCourses: (courses: string[]) => void;
+
+    // Notification Preferences
+    notificationPrefs: NotificationPrefs;
+    setNotificationPrefs: (prefs: NotificationPrefs) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -51,6 +69,9 @@ export const useStore = create<AppState>((set) => ({
     setAuthLoading: (authLoading) => set({ authLoading }),
 
     setActiveCourses: (activeCourses) => set({ activeCourses }),
+
+    notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
+    setNotificationPrefs: (notificationPrefs) => set({ notificationPrefs }),
 
     toggleModuleCompletion: (courseId, moduleId) => set((state) => {
         const currentCourseModules = state.completedModules[courseId] || [];
