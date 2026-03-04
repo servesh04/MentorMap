@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, BookOpen, TrendingUp, Users, Trash2, Loader } from 'lucide-react';
+import { X, Save, BookOpen, TrendingUp, Users, Trash2, Loader, Check } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/useStore';
 import { updateUserFirestoreProfile } from '../services/userService';
@@ -21,6 +21,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOpen, onC
     const { deleteAccount } = useAuth();
 
     const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
+    const [selectedRole, setSelectedRole] = useState(userRole);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -28,52 +29,58 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOpen, onC
 
     if (!isOpen) return null;
 
-    // ── Display Name: Optimistic update + background sync ──
-    const handleSaveName = async () => {
-        const newName = displayName.trim();
-        if (!newName || saving || !currentUser) return;
+    // Track if anything has changed
+    const nameChanged = displayName.trim() !== (currentUser?.displayName || '');
+    const roleChanged = selectedRole !== userRole;
+    const hasChanges = nameChanged || roleChanged;
+
+    // ── Unified Save: Optimistic update + background sync ──
+    const handleSaveAll = async () => {
+        if (!currentUser || saving || !hasChanges) return;
 
         const previousName = currentUser.displayName || '';
+        const previousRole = userRole;
+        const newName = displayName.trim();
+        const updates: Record<string, unknown> = {};
 
-        // Step A: Optimistic UI update — instant
-        setCurrentUser({ ...currentUser, displayName: newName } as any);
+        // Step A: Optimistic UI updates — instant
+        if (nameChanged && newName) {
+            setCurrentUser({ ...currentUser, displayName: newName } as any);
+            updates.displayName = newName;
+        }
+        if (roleChanged && selectedRole) {
+            setUserRole(selectedRole);
+            updates.role = selectedRole;
+        }
+
         setSaving(true);
         setError(null);
         setSaveSuccess(false);
 
         // Step B: Background sync to Firestore
         try {
-            await updateUserFirestoreProfile(currentUser.uid, { displayName: newName });
+            await updateUserFirestoreProfile(currentUser.uid, updates);
             setSaveSuccess(true);
-            setTimeout(() => setSaveSuccess(false), 2000);
+            setTimeout(() => setSaveSuccess(false), 2500);
         } catch (_err) {
             // Step C: Rollback on failure
-            setCurrentUser({ ...currentUser, displayName: previousName } as any);
-            setDisplayName(previousName);
-            setError('Failed to save name. Changes reverted.');
+            if (nameChanged) {
+                setCurrentUser({ ...currentUser, displayName: previousName } as any);
+                setDisplayName(previousName);
+            }
+            if (roleChanged) {
+                setUserRole(previousRole);
+                setSelectedRole(previousRole);
+            }
+            setError('Failed to save. Changes reverted.');
         } finally {
             setSaving(false);
         }
     };
 
-    // ── Role: Optimistic update + background sync ──
-    const handleRoleChange = async (role: 'beginner' | 'advanced' | 'lecturer') => {
-        if (!currentUser || role === userRole) return;
-
-        const previousRole = userRole;
-
-        // Step A: Optimistic UI update — instant
-        setUserRole(role);
-        setError(null);
-
-        // Step B: Background sync to Firestore
-        try {
-            await updateUserFirestoreProfile(currentUser.uid, { role });
-        } catch (_err) {
-            // Step C: Rollback on failure
-            setUserRole(previousRole);
-            setError('Failed to update role. Changes reverted.');
-        }
+    // ── Role: local selection only (saved via unified Save button) ──
+    const handleRoleSelect = (role: 'beginner' | 'advanced' | 'lecturer') => {
+        setSelectedRole(role);
     };
 
     // ── Delete Account (destructive — no optimistic pattern) ──
@@ -127,59 +134,42 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOpen, onC
 
                     {/* Section 1: Display Name */}
                     <section>
-                        <h3 className="text-xs font-medium text-slate-400 tracking-wide mb-3">Display Name</h3>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={displayName}
-                                onChange={(e) => setDisplayName(e.target.value)}
-                                placeholder="Your name"
-                                className="flex-1 h-12 px-4 rounded-xl bg-slate-800 border border-border text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-colors"
-                                maxLength={50}
-                            />
-                            <button
-                                onClick={handleSaveName}
-                                disabled={saving || !displayName.trim() || displayName.trim() === currentUser?.displayName}
-                                className={clsx(
-                                    "h-12 px-4 rounded-xl flex items-center gap-2 text-sm font-medium transition-all shrink-0",
-                                    saveSuccess
-                                        ? "bg-emerald-500 text-white"
-                                        : saving || !displayName.trim() || displayName.trim() === currentUser?.displayName
-                                            ? "bg-muted text-muted-foreground cursor-not-allowed"
-                                            : "bg-emerald-600 text-white hover:bg-emerald-500"
-                                )}
-                            >
-                                {saving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
-                                {saveSuccess ? 'Saved!' : 'Save'}
-                            </button>
-                        </div>
+                        <h3 className="text-xs uppercase tracking-wider text-slate-400 font-medium mb-3">Display Name</h3>
+                        <input
+                            type="text"
+                            value={displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
+                            placeholder="Your name"
+                            className="w-full h-12 px-4 rounded-xl bg-slate-800 border border-slate-700/50 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-colors"
+                            maxLength={50}
+                        />
                     </section>
 
                     {/* Section 2: Role */}
                     <section>
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Learning Role</h3>
+                        <h3 className="text-xs uppercase tracking-wider text-slate-400 font-medium mb-3">Learning Role</h3>
                         <div className="grid grid-cols-3 gap-2">
                             {ROLES.map(({ key, label, icon: Icon, color }) => (
                                 <button
                                     key={key}
-                                    onClick={() => handleRoleChange(key)}
+                                    onClick={() => handleRoleSelect(key)}
                                     className={clsx(
                                         "flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200 active:scale-95 cursor-pointer",
-                                        userRole === key
+                                        selectedRole === key
                                             ? `border-${color}-500/50 bg-${color}-500/10`
-                                            : "border-border bg-card hover:bg-slate-800/80 hover:border-slate-600"
+                                            : "bg-slate-800 border-slate-700/50 hover:bg-slate-700/80 hover:border-slate-600"
                                     )}
                                 >
                                     <Icon size={20} className={clsx(
-                                        userRole === key ? `text-${color}-500` : "text-muted-foreground"
+                                        selectedRole === key ? `text-${color}-500` : "text-slate-400"
                                     )} />
                                     <span className={clsx(
                                         "text-xs font-medium",
-                                        userRole === key ? "text-foreground" : "text-muted-foreground"
+                                        selectedRole === key ? "text-foreground" : "text-slate-400"
                                     )}>
                                         {label}
                                     </span>
-                                    {userRole === key && (
+                                    {selectedRole === key && (
                                         <span className="text-[9px] font-bold uppercase tracking-wider text-primary">Active</span>
                                     )}
                                 </button>
@@ -187,9 +177,32 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOpen, onC
                         </div>
                     </section>
 
+                    {/* Unified Save Button */}
+                    <button
+                        onClick={handleSaveAll}
+                        disabled={saving || !hasChanges}
+                        className={clsx(
+                            "w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-200 active:scale-[0.98]",
+                            saveSuccess
+                                ? "bg-emerald-500 text-white"
+                                : saving || !hasChanges
+                                    ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                                    : "bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-500/20"
+                        )}
+                    >
+                        {saving ? (
+                            <Loader size={18} className="animate-spin" />
+                        ) : saveSuccess ? (
+                            <Check size={18} />
+                        ) : (
+                            <Save size={18} />
+                        )}
+                        {saving ? 'Saving...' : saveSuccess ? 'Changes Saved!' : 'Save Changes'}
+                    </button>
+
                     {/* Section 3: Danger Zone */}
-                    <section className="mt-4 pt-4 border-t border-border">
-                        <h3 className="text-sm font-semibold text-red-500 uppercase tracking-wider mb-3">Danger Zone</h3>
+                    <section className="mt-8 pt-6 border-t border-slate-700/50">
+                        <h3 className="text-xs uppercase tracking-wider text-red-500 font-medium mb-3">Danger Zone</h3>
                         <button
                             onClick={handleDeleteAccount}
                             disabled={deleting}

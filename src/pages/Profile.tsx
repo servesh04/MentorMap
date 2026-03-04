@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/useStore';
 import { ThemeToggle } from '../components/ThemeToggle';
 import AccountSettingsModal from '../components/AccountSettingsModal';
+import HelpSupportModal from '../components/HelpSupportModal';
 import { LogOut, Settings, Bell, HelpCircle, ChevronRight } from 'lucide-react';
 
 const Profile: React.FC = () => {
@@ -16,6 +17,7 @@ const Profile: React.FC = () => {
     };
 
     const [showAccountSettings, setShowAccountSettings] = useState(false);
+    const [showHelpSupport, setShowHelpSupport] = useState(false);
 
     return (
         <div className="p-4 pb-24">
@@ -65,7 +67,10 @@ const Profile: React.FC = () => {
                 </button>
 
                 {/* Help & Support */}
-                <button className="w-full text-left px-5 py-3.5 border-b border-border flex items-center justify-between active:bg-muted active:scale-[0.99] transition-all duration-200 text-foreground">
+                <button
+                    onClick={() => setShowHelpSupport(true)}
+                    className="w-full text-left px-5 py-3.5 border-b border-border flex items-center justify-between active:bg-muted active:scale-[0.99] transition-all duration-200 text-foreground"
+                >
                     <div className="flex items-center gap-3">
                         <HelpCircle size={18} className="text-muted-foreground" />
                         <span className="text-sm">Help & Support</span>
@@ -90,6 +95,10 @@ const Profile: React.FC = () => {
             <AccountSettingsModal
                 isOpen={showAccountSettings}
                 onClose={() => setShowAccountSettings(false)}
+            />
+            <HelpSupportModal
+                isOpen={showHelpSupport}
+                onClose={() => setShowHelpSupport(false)}
             />
         </div>
     );
