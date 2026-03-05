@@ -1,9 +1,12 @@
 import React, { memo, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { Check, Lock, Play } from 'lucide-react';
 import clsx from 'clsx';
 import { useStore } from '../../store/useStore';
 import type { Module } from '../../types';
 import QuizModal from './QuizModal';
+import { calculateModuleXP } from '../../utils/gamification';
+import { awardXP } from '../../services/userService';
 
 interface RoadmapNodeProps {
     module: Module;
@@ -11,6 +14,7 @@ interface RoadmapNodeProps {
     isCurrent: boolean;
     isLocked: boolean;
     courseId?: string;
+    courseLevel?: string;
     onClick?: () => void;
     isSelected?: boolean;
 }
@@ -21,6 +25,7 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = ({
     isCurrent,
     isLocked,
     courseId,
+    courseLevel,
     onClick,
     isSelected
 }) => {
@@ -43,6 +48,12 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = ({
     const handleQuizPass = () => {
         if (courseId && module.id) {
             store.toggleModuleCompletion(courseId, module.id);
+            // Award XP
+            const user = store.currentUser;
+            if (user && courseLevel) {
+                const xpEarned = calculateModuleXP(courseLevel);
+                awardXP(user.uid, xpEarned);
+            }
         }
     };
 
@@ -115,15 +126,16 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = ({
                 </div>
             </div>
 
-            {/* Quiz Modal */}
-            {courseId && (
+            {/* Quiz Modal — portaled to body to escape RoadmapView overflow */}
+            {courseId && showQuiz && ReactDOM.createPortal(
                 <QuizModal
                     isOpen={showQuiz}
                     onClose={() => setShowQuiz(false)}
                     nodeId={`${courseId}_${module.id}`}
                     topicName={module.title}
                     onMarkComplete={handleQuizPass}
-                />
+                />,
+                document.body
             )}
         </>
     );

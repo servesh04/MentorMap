@@ -5,7 +5,8 @@ import { Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Home: React.FC = () => {
-    const { currentUser, completedModules, activeCourses } = useStore();
+    const { currentUser, completedModules, activeCourses, streak, xp } = useStore();
+
     const { courses, loading, error } = useCourses();
 
     if (loading) {
@@ -31,13 +32,13 @@ const Home: React.FC = () => {
             <header className="mb-4">
                 <h1 className="text-xl font-bold text-foreground">Welcome back, {currentUser?.displayName?.split(' ')[0] || 'Learner'}!</h1>
                 <div className="flex gap-3 mt-2">
-                    <div className="flex-1 bg-primary/10 px-3 py-2 rounded-xl flex items-center gap-2">
-                        <span className="text-lg font-bold text-primary">{activeCourses.length}</span>
-                        <span className="text-xs text-primary/80">Active</span>
+                    <div className="flex-1 flex flex-col items-center justify-center py-5 sm:py-6 rounded-2xl bg-card shadow-sm border border-border">
+                        <span className="text-3xl sm:text-4xl font-bold flex items-center gap-2 text-foreground">🔥 {streak}</span>
+                        <span className="text-xs uppercase tracking-wider text-muted-foreground mt-1 font-medium">Day Streak</span>
                     </div>
-                    <div className="flex-1 bg-emerald-500/10 px-3 py-2 rounded-xl flex items-center gap-2">
-                        <span className="text-lg font-bold text-emerald-500">{completedCount * 15}m</span>
-                        <span className="text-xs text-emerald-500/80">Learned</span>
+                    <div className="flex-1 flex flex-col items-center justify-center py-5 sm:py-6 rounded-2xl bg-card shadow-sm border border-border">
+                        <span className="text-3xl sm:text-4xl font-bold flex items-center gap-2 text-foreground">⚡ {xp}</span>
+                        <span className="text-xs uppercase tracking-wider text-muted-foreground mt-1 font-medium">Total XP</span>
                     </div>
                 </div>
             </header>

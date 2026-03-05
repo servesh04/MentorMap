@@ -47,6 +47,13 @@ interface AppState {
     // Notification Preferences
     notificationPrefs: NotificationPrefs;
     setNotificationPrefs: (prefs: NotificationPrefs) => void;
+
+    // Gamification
+    xp: number;
+    streak: number;
+    lastActiveDate: string; // 'YYYY-MM-DD' local timezone
+    addLocalXP: (amount: number) => void;
+    setLocalStreak: (streak: number, date: string) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -72,6 +79,12 @@ export const useStore = create<AppState>((set) => ({
 
     notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
     setNotificationPrefs: (notificationPrefs) => set({ notificationPrefs }),
+
+    xp: 0,
+    streak: 0,
+    lastActiveDate: '',
+    addLocalXP: (amount) => set((state) => ({ xp: state.xp + amount })),
+    setLocalStreak: (streak, lastActiveDate) => set({ streak, lastActiveDate }),
 
     toggleModuleCompletion: (courseId, moduleId) => set((state) => {
         const currentCourseModules = state.completedModules[courseId] || [];

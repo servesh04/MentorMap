@@ -8,9 +8,10 @@ interface RoadmapViewProps {
     completedModuleIds: string[];
     onModuleClick: (moduleId: string) => void;
     courseId: string;
+    courseLevel?: string;
 }
 
-const RoadmapView: React.FC<RoadmapViewProps> = ({ modules, completedModuleIds, onModuleClick, courseId }) => {
+const RoadmapView: React.FC<RoadmapViewProps> = ({ modules, completedModuleIds, onModuleClick, courseId, courseLevel }) => {
 
     const getNodePositionClasses = (index: number) => {
         // Center the first node. then alternate left and right on medium screens upwards
@@ -49,6 +50,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ modules, completedModuleIds, 
                                     isCurrent={isCurrent}
                                     isLocked={isLocked}
                                     courseId={courseId}
+                                    courseLevel={courseLevel}
                                     onClick={() => onModuleClick(module.id)}
                                 />
                             </div>

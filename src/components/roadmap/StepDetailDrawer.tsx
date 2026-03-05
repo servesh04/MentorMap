@@ -7,15 +7,18 @@ import MentorChatWidget from './MentorChatWidget';
 import clsx from 'clsx';
 import { useStore } from '../../store/useStore';
 import type { Module } from '../../types';
+import { calculateModuleXP } from '../../utils/gamification';
+import { awardXP } from '../../services/userService';
 
 interface StepDetailDrawerProps {
     isOpen: boolean;
     onClose: () => void;
     module: Module | null;
     courseId?: string;
+    courseLevel?: string;
 }
 
-const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, module, courseId }) => {
+const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, module, courseId, courseLevel }) => {
     // Only search if we have an open module
     const searchQuery = module ? `${module.title} tutorial` : '';
     const { video, loading: videoLoading } = useYouTubeSearch(isOpen ? searchQuery : '');
@@ -42,6 +45,12 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
     const handleQuizPass = () => {
         if (courseId && module) {
             store.toggleModuleCompletion(courseId, module.id);
+            // Award XP
+            const user = store.currentUser;
+            if (user && courseLevel) {
+                const xpEarned = calculateModuleXP(courseLevel);
+                awardXP(user.uid, xpEarned);
+            }
         }
     };
 

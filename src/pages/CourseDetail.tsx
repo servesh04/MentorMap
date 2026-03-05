@@ -12,6 +12,8 @@ import StepDetailDrawer from '../components/roadmap/StepDetailDrawer';
 import type { Module, Course } from '../types';
 import { courseService } from '../services/courseService';
 import DynamicCourseView from './DynamicCourseView';
+import { calculateModuleXP } from '../utils/gamification';
+import { awardXP } from '../services/userService';
 
 const CourseDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -22,6 +24,7 @@ const CourseDetail: React.FC = () => {
     const [selectedQuizModule, setSelectedQuizModule] = useState<Module | null>(null);
     const [selectedDrawerModule, setSelectedDrawerModule] = useState<Module | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [xpToast, setXpToast] = useState<number | null>(null);
 
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
@@ -95,6 +98,11 @@ const CourseDetail: React.FC = () => {
             // Only toggle if not already completed (avoid un-toggling)
             if (!courseCompletedModules.includes(selectedQuizModule.id)) {
                 toggleModuleCompletion(course.id, selectedQuizModule.id);
+                // Award XP based on course difficulty
+                const xpEarned = calculateModuleXP(course.level);
+                awardXP(currentUser.uid, xpEarned);
+                setXpToast(xpEarned);
+                setTimeout(() => setXpToast(null), 2500);
             }
             setSelectedQuizModule(null);
         }
@@ -214,6 +222,7 @@ const CourseDetail: React.FC = () => {
                                 completedModuleIds={courseCompletedModules}
                                 onModuleClick={handleRoadmapNodeClick}
                                 courseId={course.id}
+                                courseLevel={course.level}
                             />
                         )}
 
@@ -255,7 +264,18 @@ const CourseDetail: React.FC = () => {
                 onClose={handleCloseDrawer}
                 module={selectedDrawerModule}
                 courseId={course.id}
+                courseLevel={course.level}
             />
+
+            {/* XP Earned Toast */}
+            {xpToast !== null && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-300">
+                    <div className="bg-card border border-border shadow-xl rounded-2xl px-6 py-3 flex items-center gap-2">
+                        <span className="text-2xl">⚡</span>
+                        <span className="text-lg font-bold text-foreground">+{xpToast} XP</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

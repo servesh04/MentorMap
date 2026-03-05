@@ -3,9 +3,10 @@ import { onAuthStateChanged, signInWithPopup, signOut, createUserWithEmailAndPas
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { useStore } from '../store/useStore';
+import { calculateDailyStreak } from '../services/userService';
 
 export const useAuthListener = () => {
-    const { setCurrentUser, setUserRole, setAuthLoading, setActiveCourses, setNotificationPrefs } = useStore();
+    const { setCurrentUser, setUserRole, setAuthLoading, setActiveCourses, setNotificationPrefs, setLocalStreak, addLocalXP } = useStore();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -22,6 +23,14 @@ export const useAuthListener = () => {
                         if (data.notificationPrefs) {
                             setNotificationPrefs(data.notificationPrefs);
                         }
+                        // Load gamification data
+                        const xp = data.xp || 0;
+                        const streak = data.streak || 0;
+                        const lastActiveDate = data.lastActiveDate || '';
+                        addLocalXP(xp); // Set initial XP (store starts at 0)
+                        setLocalStreak(streak, lastActiveDate);
+                        // Calculate streak for today
+                        calculateDailyStreak(user.uid, streak, lastActiveDate);
                     } else {
                         setUserRole(null); // Triggers onboarding
                         setActiveCourses([]);
