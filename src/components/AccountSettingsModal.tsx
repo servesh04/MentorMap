@@ -113,11 +113,11 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOpen, onC
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
             <div className={clsx(
-                "w-full sm:max-w-md bg-background rounded-t-2xl sm:rounded-2xl border border-slate-700/50 shadow-2xl",
+                "w-full sm:max-w-md bg-background rounded-t-2xl sm:rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-2xl shadow-slate-200/50 dark:shadow-none",
                 "animate-in slide-in-from-bottom duration-300 max-h-[85vh] overflow-y-auto"
             )}>
                 {/* Header */}
-                <div className="sticky top-0 bg-background/90 backdrop-blur-md flex items-center justify-between px-5 py-4 border-b border-border z-10">
+                <div className="sticky top-0 bg-background/90 backdrop-blur-md flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700/50 z-10">
                     <h2 className="text-lg font-bold text-foreground">Account Settings</h2>
                     <button onClick={onClose} className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground">
                         <X size={20} />
@@ -134,20 +134,20 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOpen, onC
 
                     {/* Section 1: Display Name */}
                     <section>
-                        <h3 className="text-xs uppercase tracking-wider text-slate-400 font-medium mb-3">Display Name</h3>
+                        <h3 className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium mb-3">Display Name</h3>
                         <input
                             type="text"
                             value={displayName}
                             onChange={(e) => setDisplayName(e.target.value)}
                             placeholder="Your name"
-                            className="w-full h-12 px-4 rounded-xl bg-slate-800 border border-slate-700/50 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-colors"
+                            className="w-full h-12 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 text-slate-900 dark:text-foreground text-sm placeholder:text-slate-400 dark:placeholder:text-muted-foreground focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-colors"
                             maxLength={50}
                         />
                     </section>
 
                     {/* Section 2: Role */}
                     <section>
-                        <h3 className="text-xs uppercase tracking-wider text-slate-400 font-medium mb-3">Learning Role</h3>
+                        <h3 className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium mb-3">Learning Role</h3>
                         <div className="grid grid-cols-3 gap-2">
                             {ROLES.map(({ key, label, icon: Icon, color }) => (
                                 <button
@@ -157,15 +157,15 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOpen, onC
                                         "flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200 active:scale-95 cursor-pointer",
                                         selectedRole === key
                                             ? `border-${color}-500/50 bg-${color}-500/10`
-                                            : "bg-slate-800 border-slate-700/50 hover:bg-slate-700/80 hover:border-slate-600"
+                                            : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600"
                                     )}
                                 >
                                     <Icon size={20} className={clsx(
-                                        selectedRole === key ? `text-${color}-500` : "text-slate-400"
+                                        selectedRole === key ? `text-${color}-500` : "text-slate-500 dark:text-slate-400"
                                     )} />
                                     <span className={clsx(
                                         "text-xs font-medium",
-                                        selectedRole === key ? "text-foreground" : "text-slate-400"
+                                        selectedRole === key ? "text-foreground" : "text-slate-500 dark:text-slate-400"
                                     )}>
                                         {label}
                                     </span>
@@ -186,7 +186,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOpen, onC
                             saveSuccess
                                 ? "bg-emerald-500 text-white"
                                 : saving || !hasChanges
-                                    ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                                    ? "bg-muted text-slate-400 dark:text-slate-500 cursor-not-allowed"
                                     : "bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-500/20"
                         )}
                     >
@@ -201,12 +201,12 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOpen, onC
                     </button>
 
                     {/* Section 3: Danger Zone */}
-                    <section className="mt-8 pt-6 border-t border-slate-700/50">
+                    <section className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700/50">
                         <h3 className="text-xs uppercase tracking-wider text-red-500 font-medium mb-3">Danger Zone</h3>
                         <button
                             onClick={handleDeleteAccount}
                             disabled={deleting}
-                            className="w-full h-12 flex items-center justify-center gap-2 rounded-xl border border-red-500/30 text-red-500 text-sm font-medium hover:bg-red-500 hover:text-white hover:border-red-500 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
+                            className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-red-50 dark:bg-transparent border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-500 text-sm font-medium hover:bg-red-600 hover:text-white hover:border-red-600 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
                         >
                             {deleting ? (
                                 <Loader size={16} className="animate-spin" />

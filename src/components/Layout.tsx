@@ -4,63 +4,68 @@ import { LayoutDashboard, Compass, User } from 'lucide-react';
 import clsx from 'clsx';
 import { ThemeToggle } from './ThemeToggle';
 import Logo from './Logo';
+import Sidebar from './Sidebar';
 
 const Layout: React.FC = () => {
     return (
-        <div className="flex flex-col h-screen bg-background text-foreground transition-colors duration-300">
-            {/* Top Navigation */}
-            <header className="px-6 py-4 flex items-center justify-between border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-40">
-                <Logo className="w-32" />
-                <ThemeToggle />
-            </header>
+        <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
+            {/* Desktop Sidebar — hidden on mobile */}
+            <Sidebar />
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto pb-20">
-                <Outlet />
-            </main>
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+                {/* Mobile Header — hidden on desktop */}
+                <header className="flex md:hidden items-center justify-between px-4 py-3 border-b border-border bg-background sticky top-0 z-40">
+                    <Logo className="w-10" />
+                    <ThemeToggle />
+                </header>
 
-            {/* Bottom Navigation — Glassmorphism Tab Bar */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-md border-t border-border z-50 pb-[env(safe-area-inset-bottom)] transition-colors duration-300">
-                <div className="flex justify-around items-center h-16">
-                    <NavLink
-                        to="/dashboard"
-                        className={({ isActive }) =>
-                            clsx(
-                                "flex flex-col items-center justify-center w-full h-full transition-all duration-200 active:scale-95",
-                                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                            )
-                        }
-                    >
-                        <LayoutDashboard className="w-6 h-6" />
-                        <span className="text-xs mt-1 font-medium">Home</span>
-                    </NavLink>
+                {/* Page Content */}
+                <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+                    <Outlet />
+                </main>
+            </div>
 
-                    <NavLink
-                        to="/explore"
-                        className={({ isActive }) =>
-                            clsx(
-                                "flex flex-col items-center justify-center w-full h-full transition-all duration-200 active:scale-95",
-                                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                            )
-                        }
-                    >
-                        <Compass className="w-6 h-6" />
-                        <span className="text-xs mt-1 font-medium">Explore</span>
-                    </NavLink>
+            {/* Mobile Bottom Nav — hidden on desktop */}
+            <nav className="flex md:hidden fixed bottom-0 w-full h-16 border-t border-border bg-background/90 backdrop-blur-md justify-around items-center z-50 pb-[env(safe-area-inset-bottom)]">
+                <NavLink
+                    to="/dashboard"
+                    className={({ isActive }) =>
+                        clsx(
+                            "flex flex-col items-center justify-center w-full h-full transition-all duration-200 active:scale-95",
+                            isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                        )
+                    }
+                >
+                    <LayoutDashboard className="w-6 h-6" />
+                    <span className="text-xs mt-1 font-medium">Home</span>
+                </NavLink>
 
-                    <NavLink
-                        to="/profile"
-                        className={({ isActive }) =>
-                            clsx(
-                                "flex flex-col items-center justify-center w-full h-full transition-all duration-200 active:scale-95",
-                                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                            )
-                        }
-                    >
-                        <User className="w-6 h-6" />
-                        <span className="text-xs mt-1 font-medium">Profile</span>
-                    </NavLink>
-                </div>
+                <NavLink
+                    to="/explore"
+                    className={({ isActive }) =>
+                        clsx(
+                            "flex flex-col items-center justify-center w-full h-full transition-all duration-200 active:scale-95",
+                            isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                        )
+                    }
+                >
+                    <Compass className="w-6 h-6" />
+                    <span className="text-xs mt-1 font-medium">Explore</span>
+                </NavLink>
+
+                <NavLink
+                    to="/profile"
+                    className={({ isActive }) =>
+                        clsx(
+                            "flex flex-col items-center justify-center w-full h-full transition-all duration-200 active:scale-95",
+                            isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                        )
+                    }
+                >
+                    <User className="w-6 h-6" />
+                    <span className="text-xs mt-1 font-medium">Profile</span>
+                </NavLink>
             </nav>
         </div>
     );

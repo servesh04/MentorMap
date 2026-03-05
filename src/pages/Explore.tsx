@@ -35,7 +35,7 @@ const Explore: React.FC = () => {
                     <input
                         type="text"
                         placeholder="Search courses..."
-                        className="w-full h-12 bg-card rounded-full border-none text-foreground pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-slate-400"
+                        className="w-full h-12 bg-slate-50 dark:bg-card rounded-full border border-slate-200 dark:border-transparent text-slate-900 dark:text-foreground pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary focus:border-emerald-500 transition-all placeholder:text-slate-400"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />

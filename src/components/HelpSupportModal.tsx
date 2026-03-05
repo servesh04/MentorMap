@@ -93,11 +93,11 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onClose }) 
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
             <div className={clsx(
-                "w-full sm:max-w-md bg-background rounded-t-2xl sm:rounded-2xl border border-slate-700/50 shadow-2xl",
+                "w-full sm:max-w-md bg-background rounded-t-2xl sm:rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-2xl shadow-slate-200/50 dark:shadow-none",
                 "animate-in slide-in-from-bottom duration-300 max-h-[85vh] overflow-y-auto"
             )}>
                 {/* Header */}
-                <div className="sticky top-0 bg-background/90 backdrop-blur-md flex items-center justify-between px-5 py-4 border-b border-slate-700/50 z-10">
+                <div className="sticky top-0 bg-background/90 backdrop-blur-md flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700/50 z-10">
                     <h2 className="text-lg font-bold text-foreground">Help & Support</h2>
                     <button onClick={onClose} className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground">
                         <X size={20} />
@@ -108,7 +108,7 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onClose }) 
 
                     {/* ── Section 1: Feedback Form ── */}
                     <section>
-                        <h3 className="text-xs uppercase tracking-wider text-slate-400 font-medium mb-3">Send Feedback</h3>
+                        <h3 className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium mb-3">Send Feedback</h3>
 
                         {/* Category Picker */}
                         <div className="flex gap-2 mb-3">
@@ -120,7 +120,7 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onClose }) 
                                         "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 active:scale-95",
                                         category === key
                                             ? `bg-${color}-500/15 text-${color}-400 border border-${color}-500/30`
-                                            : "bg-slate-800 text-slate-400 border border-slate-700/50 hover:bg-slate-700/80"
+                                            : "bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700/80"
                                     )}
                                 >
                                     <Icon size={14} />
@@ -136,7 +136,7 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onClose }) 
                             placeholder={PLACEHOLDERS[category]}
                             rows={4}
                             maxLength={1000}
-                            className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700/50 text-foreground text-sm placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-colors resize-none"
+                            className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 text-slate-900 dark:text-foreground text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-colors resize-none"
                         />
                         <div className="flex items-center justify-between mt-1">
                             <span className="text-[10px] text-slate-500">{message.length}/1000</span>
@@ -158,7 +158,7 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onClose }) 
                                 submitted
                                     ? "bg-emerald-500 text-white"
                                     : submitting || !message.trim()
-                                        ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                                        ? "bg-muted text-slate-400 dark:text-slate-500 cursor-not-allowed"
                                         : "bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-500/20"
                             )}
                         >
@@ -175,25 +175,25 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onClose }) 
 
                     {/* ── Section 2: FAQ Accordion ── */}
                     <section>
-                        <h3 className="text-xs uppercase tracking-wider text-slate-400 font-medium mb-3">Frequently Asked Questions</h3>
+                        <h3 className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium mb-3">Frequently Asked Questions</h3>
                         <div className="space-y-1">
                             {FAQ_ITEMS.map((item, i) => (
-                                <div key={i} className="rounded-xl border border-slate-700/50 overflow-hidden">
+                                <div key={i} className="rounded-xl border border-slate-200 dark:border-slate-700/50 overflow-hidden">
                                     <button
                                         onClick={() => toggleFaq(i)}
-                                        className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-slate-800/50 transition-colors"
+                                        className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                                     >
                                         <span>{item.q}</span>
                                         <ChevronDown
                                             size={16}
                                             className={clsx(
-                                                "text-slate-400 shrink-0 ml-2 transition-transform duration-200",
+                                                "text-slate-500 dark:text-slate-400 shrink-0 ml-2 transition-transform duration-200",
                                                 openFaq === i && "rotate-180"
                                             )}
                                         />
                                     </button>
                                     {openFaq === i && (
-                                        <div className="px-4 pb-3 text-sm text-slate-400 leading-relaxed border-t border-slate-700/30">
+                                        <div className="px-4 pb-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed border-t border-slate-200 dark:border-slate-700/30">
                                             <p className="pt-2">{item.a}</p>
                                         </div>
                                     )}
@@ -204,29 +204,29 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onClose }) 
 
                     {/* ── Section 3: Contact & Socials ── */}
                     <section>
-                        <h3 className="text-xs uppercase tracking-wider text-slate-400 font-medium mb-3">Get in Touch</h3>
+                        <h3 className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium mb-3">Get in Touch</h3>
                         <div className="space-y-2">
                             <a
                                 href="mailto:serveshkrr@gmail.com"
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700/50 hover:bg-slate-700/80 hover:border-slate-600 transition-all text-foreground text-sm"
+                                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 transition-all text-foreground text-sm"
                             >
-                                <Mail size={18} className="text-slate-400" />
+                                <Mail size={18} className="text-slate-500 dark:text-slate-400" />
                                 <span>serveshkrr@gmail.com</span>
                             </a>
                             <a
                                 href="https://github.com/servesh04/MentorMap"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700/50 hover:bg-slate-700/80 hover:border-slate-600 transition-all text-foreground text-sm"
+                                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 transition-all text-foreground text-sm"
                             >
-                                <Github size={18} className="text-slate-400" />
+                                <Github size={18} className="text-slate-500 dark:text-slate-400" />
                                 <span>GitHub Repository</span>
                             </a>
                         </div>
                     </section>
 
                     {/* ── Section 4: App Info ── */}
-                    <div className="text-center pt-4 pb-2 border-t border-slate-700/30">
+                    <div className="text-center pt-4 pb-2 border-t border-slate-200 dark:border-slate-700/30">
                         <p className="text-xs text-slate-500">MentorMap v{APP_VERSION}</p>
                         <p className="text-[10px] text-slate-600 mt-1">Made with ❤️ for learners everywhere</p>
                     </div>

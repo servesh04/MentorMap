@@ -49,11 +49,11 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, onClose
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
             <div className={clsx(
-                "w-full sm:max-w-md bg-background rounded-t-2xl sm:rounded-2xl border border-slate-700/50 shadow-2xl",
+                "w-full sm:max-w-md bg-background rounded-t-2xl sm:rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-2xl shadow-slate-200/50 dark:shadow-none",
                 "animate-in slide-in-from-bottom duration-300 max-h-[85vh] overflow-y-auto"
             )}>
                 {/* Header */}
-                <div className="sticky top-0 bg-background/90 backdrop-blur-md flex items-center justify-between px-5 py-4 border-b border-slate-700/50 z-10">
+                <div className="sticky top-0 bg-background/90 backdrop-blur-md flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700/50 z-10">
                     <h2 className="text-lg font-bold text-foreground">Notifications</h2>
                     <button onClick={onClose} className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground">
                         <X size={20} />
@@ -61,19 +61,19 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, onClose
                 </div>
 
                 <div className="p-5">
-                    <h3 className="text-xs uppercase tracking-wider text-slate-400 font-medium mb-4">Preferences</h3>
+                    <h3 className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium mb-4">Preferences</h3>
 
                     <div className="space-y-1">
                         {TOGGLES.map(({ key, label, desc, icon: Icon }) => (
                             <div
                                 key={key}
-                                className="flex items-center justify-between px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700/50 mb-2"
+                                className="flex items-center justify-between px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 mb-2"
                             >
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <Icon size={18} className="text-slate-400 shrink-0" />
+                                    <Icon size={18} className="text-slate-500 dark:text-slate-400 shrink-0" />
                                     <div className="min-w-0">
                                         <p className="text-sm font-medium text-foreground">{label}</p>
-                                        <p className="text-xs text-slate-500 truncate">{desc}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-500 truncate">{desc}</p>
                                     </div>
                                 </div>
 
@@ -84,7 +84,7 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, onClose
                                         "relative shrink-0 ml-3 w-11 h-6 rounded-full transition-colors duration-200",
                                         notificationPrefs[key]
                                             ? "bg-emerald-500"
-                                            : "bg-slate-600"
+                                            : "bg-slate-300 dark:bg-slate-600"
                                     )}
                                     role="switch"
                                     aria-checked={notificationPrefs[key]}
