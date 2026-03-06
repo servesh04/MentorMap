@@ -6,10 +6,16 @@ import Logo from './Logo';
 import { ThemeToggle } from './ThemeToggle';
 import { useStore } from '../store/useStore';
 import { useAuth } from '../hooks/useAuth';
+import { useCourses } from '../hooks/useCourses';
+import { getUserDynamicRank } from '../utils/leveling';
 
 const Sidebar: React.FC = () => {
-    const { currentUser, userRole } = useStore();
+    const { currentUser, xp, activeCourses } = useStore();
     const { logout } = useAuth();
+    const { courses } = useCourses();
+
+    const activeCourse = courses.find(c => activeCourses.includes(c.id));
+    const rank = getUserDynamicRank(xp, activeCourse?.progressionTitles);
 
     const handleLogout = async () => {
         if (confirm("Are you sure you want to log out?")) {
@@ -69,7 +75,9 @@ const Sidebar: React.FC = () => {
                     </div>
                     <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{currentUser?.displayName || 'User'}</p>
-                        <p className="text-xs text-muted-foreground truncate capitalize">{userRole || 'Learner'}</p>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 truncate">
+                            Lv. {rank.level} — {rank.title}
+                        </p>
                     </div>
                 </div>
 

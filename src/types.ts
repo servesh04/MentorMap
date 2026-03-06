@@ -25,4 +25,5 @@ export interface Course {
     thumbnail: string;
     modules: Module[];
     isGenerated?: boolean;
+    progressionTitles?: string[]; // AI-generated 5-element array of rank titles
 }

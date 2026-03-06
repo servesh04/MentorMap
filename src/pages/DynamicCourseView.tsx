@@ -22,7 +22,7 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
 
     // 1. Logic & Data Fetching
     const topic = course.title.replace('Learn ', '');
-    const { modules: generatedModules, loading, error } = useGeminiRoadmap(topic, course.isGenerated || false);
+    const { modules: generatedModules, progressionTitles, loading, error } = useGeminiRoadmap(topic, course.isGenerated || false);
 
     // Prefer generated modules if available, else usage course.modules
     const [modules, setModules] = useState<Module[]>(course.modules);
@@ -37,12 +37,16 @@ const DynamicCourseView: React.FC<DynamicCourseViewProps> = ({ course }) => {
             setModules(generatedModules);
             // Persistence
             const saveToDb = async () => {
-                const fullCourseData: Course = { ...course, modules: generatedModules };
+                const fullCourseData: Course = {
+                    ...course,
+                    modules: generatedModules,
+                    ...(progressionTitles.length === 5 && { progressionTitles }),
+                };
                 await courseService.saveCourse(fullCourseData);
             };
             saveToDb();
         }
-    }, [generatedModules, course]);
+    }, [generatedModules, progressionTitles, course]);
 
     // 4. Handlers
     const handleModuleClick = (module: Module) => {

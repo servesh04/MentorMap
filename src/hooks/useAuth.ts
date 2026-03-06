@@ -27,8 +27,13 @@ export const useAuthListener = () => {
                         const xp = data.xp || 0;
                         const streak = data.streak || 0;
                         const lastActiveDate = data.lastActiveDate || '';
-                        addLocalXP(xp); // Set initial XP (store starts at 0)
+                        const lastBountyDate = data.lastBountyDate || '';
+                        const unlockedBadges = data.unlockedBadges || [];
+                        addLocalXP(xp);
                         setLocalStreak(streak, lastActiveDate);
+                        useStore.getState().setLastBountyDate(lastBountyDate);
+                        // Load badges
+                        unlockedBadges.forEach((id: string) => useStore.getState().unlockBadgeLocal(id));
                         // Calculate streak for today
                         calculateDailyStreak(user.uid, streak, lastActiveDate);
                     } else {
@@ -53,7 +58,7 @@ export const useAuthListener = () => {
 };
 
 export const useAuth = () => {
-    const { currentUser, setCurrentUser } = useStore();
+    const { setCurrentUser } = useStore();
 
     const login = async () => {
         try {

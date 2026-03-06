@@ -1,13 +1,30 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { useCourses } from '../hooks/useCourses';
-import { Loader } from 'lucide-react';
+import { Loader, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { canClaimBounty } from '../services/bountyService';
+import BountyModal from '../components/BountyModal';
+import { getUserDynamicRank } from '../utils/leveling';
 
 const Home: React.FC = () => {
-    const { currentUser, completedModules, activeCourses, streak, xp } = useStore();
+    const { currentUser, completedModules, activeCourses, streak, xp, lastBountyDate } = useStore();
 
     const { courses, loading, error } = useCourses();
+    const [showBounty, setShowBounty] = useState(false);
+
+    // Determine if bounty is available
+    const bountyAvailable = canClaimBounty(lastBountyDate);
+
+    // Pick a random module topic from active courses for the bounty
+    const bountyTopic = useMemo(() => {
+        const activeCoursesData = courses.filter(c => activeCourses.includes(c.id));
+        if (activeCoursesData.length === 0) return '';
+        const allModules = activeCoursesData.flatMap(c => c.modules);
+        if (allModules.length === 0) return '';
+        const randomModule = allModules[Math.floor(Math.random() * allModules.length)];
+        return randomModule.title;
+    }, [courses, activeCourses]);
 
     if (loading) {
         return (
@@ -21,10 +38,10 @@ const Home: React.FC = () => {
         return <div className="p-8 text-center text-destructive">{error}</div>;
     }
 
-    // Calculate total progress
-    const totalModules = courses.reduce((acc, course) => acc + course.modules.length, 0);
-    const completedCount = Object.values(completedModules).flat().length;
-    const overallProgress = totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
+    // Rank calculation
+    const activeCourse = courses.find(c => activeCourses.includes(c.id));
+    const rank = getUserDynamicRank(xp, activeCourse?.progressionTitles);
+    const isMaxRank = rank.currentTierXp === rank.nextTierXp;
 
     return (
         <div className="p-4 relative">
@@ -43,21 +60,48 @@ const Home: React.FC = () => {
                 </div>
             </header>
 
-            {/* Overall Progress */}
+            {/* Daily Bounty Button */}
+            {bountyAvailable && activeCourses.length > 0 && bountyTopic && (
+                <button
+                    onClick={() => setShowBounty(true)}
+                    className="w-full mb-5 relative overflow-hidden group"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl opacity-90 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-400/0 via-white/20 to-amber-400/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    <div className="relative flex items-center justify-center gap-3 py-4 px-6">
+                        <Sparkles className="w-5 h-5 text-white animate-pulse" />
+                        <div className="text-left">
+                            <p className="text-white font-bold text-sm">Daily Bounty Available!</p>
+                            <p className="text-white/80 text-xs">Score 3/3 to earn 500 XP</p>
+                        </div>
+                        <div className="ml-auto bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+                            <span className="text-white font-bold text-sm">⚡ 500 XP</span>
+                        </div>
+                    </div>
+                </button>
+            )}
+
+            {/* Rank Progress */}
             <div className="bg-card rounded-2xl p-4 shadow-sm border border-border mb-5 active:scale-[0.98] transition-transform duration-200">
                 <div className="flex justify-between items-end mb-2">
-                    <h3 className="text-sm font-semibold text-card-foreground">Overall Progress</h3>
-                    <span className="text-xl font-bold text-primary">{overallProgress}%</span>
+                    <div>
+                        <h3 className="text-sm font-semibold text-card-foreground">Rank Progress</h3>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mt-0.5">
+                            Lv. {rank.level} — {rank.title}
+                        </p>
+                    </div>
+                    <span className="text-xl font-bold text-primary">{rank.progress}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
                     <div
-                        className="bg-primary h-full rounded-full transition-all duration-1000 ease-out"
-                        style={{ width: `${overallProgress}%` }}
+                        className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${rank.progress}%` }}
                     ></div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2 flex justify-between">
-                    <span>{completedCount} of {totalModules} modules</span>
-                    <span className="text-primary font-medium">Keep it up!</span>
+                    <span>{xp} / {isMaxRank ? '∞' : rank.nextTierXp} XP</span>
+                    {!isMaxRank && <span className="text-emerald-600 dark:text-emerald-400 font-medium">→ Next rank</span>}
+                    {isMaxRank && <span className="text-emerald-600 dark:text-emerald-400 font-medium">🏆 Max rank!</span>}
                 </p>
             </div>
 
@@ -96,6 +140,16 @@ const Home: React.FC = () => {
                         Explore Courses
                     </a>
                 </div>
+            )}
+
+            {/* Bounty Modal */}
+            {currentUser && (
+                <BountyModal
+                    isOpen={showBounty}
+                    onClose={() => setShowBounty(false)}
+                    userId={currentUser.uid}
+                    moduleTopic={bountyTopic}
+                />
             )}
         </div>
     );

@@ -51,9 +51,13 @@ interface AppState {
     // Gamification
     xp: number;
     streak: number;
-    lastActiveDate: string; // 'YYYY-MM-DD' local timezone
+    lastActiveDate: string;
+    lastBountyDate: string;
+    unlockedBadges: string[];
     addLocalXP: (amount: number) => void;
     setLocalStreak: (streak: number, date: string) => void;
+    setLastBountyDate: (date: string) => void;
+    unlockBadgeLocal: (badgeId: string) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -83,8 +87,16 @@ export const useStore = create<AppState>((set) => ({
     xp: 0,
     streak: 0,
     lastActiveDate: '',
+    lastBountyDate: '',
+    unlockedBadges: [],
     addLocalXP: (amount) => set((state) => ({ xp: state.xp + amount })),
     setLocalStreak: (streak, lastActiveDate) => set({ streak, lastActiveDate }),
+    setLastBountyDate: (lastBountyDate) => set({ lastBountyDate }),
+    unlockBadgeLocal: (badgeId) => set((state) => ({
+        unlockedBadges: state.unlockedBadges.includes(badgeId)
+            ? state.unlockedBadges
+            : [...state.unlockedBadges, badgeId]
+    })),
 
     toggleModuleCompletion: (courseId, moduleId) => set((state) => {
         const currentCourseModules = state.completedModules[courseId] || [];

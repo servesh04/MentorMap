@@ -1,6 +1,7 @@
 import { doc, updateDoc, deleteDoc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useStore } from '../store/useStore';
+import { evaluateAndUnlockBadges } from '../utils/badgeEvaluator';
 
 /**
  * Syncs partial user profile data to Firestore.
@@ -37,6 +38,8 @@ export const awardXP = async (userId: string, amount: number): Promise<void> => 
 
     try {
         await updateDoc(doc(db, 'users', userId), { xp: increment(amount) });
+        // Evaluate badges after successful XP update
+        evaluateAndUnlockBadges(userId);
     } catch (error) {
         // Rollback
         addLocalXP(-amount);
@@ -83,6 +86,8 @@ export const calculateDailyStreak = async (
             streak: newStreak,
             lastActiveDate: today,
         });
+        // Evaluate badges after successful streak update
+        evaluateAndUnlockBadges(userId);
     } catch (error) {
         // Rollback
         setLocalStreak(currentStreak, lastActiveDate);

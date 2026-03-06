@@ -3,12 +3,14 @@ import type { Module } from '../types';
 
 interface RoadmapResponse {
     modules: Module[];
+    progressionTitles: string[];
     loading: boolean;
     error: string | null;
 }
 
 export const useGeminiRoadmap = (topic: string, isGenerated: boolean): RoadmapResponse => {
     const [modules, setModules] = useState<Module[]>([]);
+    const [progressionTitles, setProgressionTitles] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -51,12 +53,14 @@ Structure:
       "type": "video", 
       "duration": "string (e.g. 10 min)" 
     }
-  ]
+  ],
+  "progressionTitles": ["beginner title", "novice title", "intermediate title", "advanced title", "master title"]
 }
 The 'id' should be unique (e.g., 'step-1', 'step-2').
 The 'title' should be descriptive.
 The 'description' should be a 1-2 sentence summary of the module.
 Create at least 5-7 modules covering beginner to advanced concepts.
+Additionally, generate an array of exactly 5 progression titles for this specific topic under the key 'progressionTitles'. These should be creative, topic-specific rank names ranging from absolute beginner to absolute master (e.g., for Cooking: ["Prep Cook", "Line Cook", "Sous Chef", "Head Chef", "Executive Chef"]).
             `;
 
             try {
@@ -98,6 +102,11 @@ Create at least 5-7 modules covering beginner to advanced concepts.
                     throw new Error("Invalid JSON structure");
                 }
 
+                // Extract progression titles
+                if (Array.isArray(parsedData.progressionTitles) && parsedData.progressionTitles.length === 5) {
+                    setProgressionTitles(parsedData.progressionTitles);
+                }
+
             } catch (err: any) {
                 console.error("Gemini Generation Error:", err);
                 setError(err.message || "Failed to generate roadmap.");
@@ -117,5 +126,5 @@ Create at least 5-7 modules covering beginner to advanced concepts.
         generateRoadmap();
     }, [topic, isGenerated]);
 
-    return { modules, loading, error };
+    return { modules, progressionTitles, loading, error };
 };
