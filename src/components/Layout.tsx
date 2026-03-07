@@ -2,13 +2,18 @@ import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { LayoutDashboard, Compass, User } from 'lucide-react';
 import clsx from 'clsx';
-import { ThemeToggle } from './ThemeToggle';
 import Logo from './Logo';
 import Sidebar from './Sidebar';
+import { WalletPill } from './WalletPill';
+import { ShopModal } from './ShopModal';
 
 const Layout: React.FC = () => {
     return (
         <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
+            <div className="hidden md:block absolute top-6 right-8 z-40">
+                <WalletPill />
+            </div>
+            <ShopModal />
             {/* Desktop Sidebar — hidden on mobile */}
             <Sidebar />
 
@@ -17,7 +22,7 @@ const Layout: React.FC = () => {
                 {/* Mobile Header — hidden on desktop */}
                 <header className="flex md:hidden items-center justify-between px-4 py-3 border-b border-border bg-background sticky top-0 z-40">
                     <Logo className="w-10" />
-                    <ThemeToggle />
+                    <WalletPill />
                 </header>
 
                 {/* Page Content */}

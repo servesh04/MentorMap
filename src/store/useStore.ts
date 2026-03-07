@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { doc, updateDoc, increment } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import type { User as MockUser, Course } from '../services/mockService';
 import type { User as FirebaseUser } from 'firebase/auth';
 
@@ -58,9 +60,21 @@ interface AppState {
     setLocalStreak: (streak: number, date: string) => void;
     setLastBountyDate: (date: string) => void;
     unlockBadgeLocal: (badgeId: string) => void;
+
+    // Shop & Economy
+    coins: number;
+    inventory: {
+        streakFreezes: number;
+        xpBoosts: number;
+        rerolls: number;
+    };
+    isShopOpen: boolean;
+    openShop: () => void;
+    closeShop: () => void;
+    purchaseItem: (itemId: 'streakFreezes' | 'xpBoosts' | 'rerolls', cost: number, limit: number) => Promise<boolean>;
 }
 
-export const useStore = create<AppState>((set) => ({
+export const useStore = create<AppState>((set, get) => ({
     user: null,
     courses: [],
     isLoading: false,
@@ -116,4 +130,64 @@ export const useStore = create<AppState>((set) => ({
             }
         };
     }),
+
+    // Shop & Economy
+    coins: 200, // Default for testing
+    inventory: {
+        streakFreezes: 0,
+        xpBoosts: 0,
+        rerolls: 0,
+    },
+    isShopOpen: false,
+    openShop: () => set({ isShopOpen: true }),
+    closeShop: () => set({ isShopOpen: false }),
+    purchaseItem: async (itemId, cost, limit) => {
+        const state = get();
+        const user = state.currentUser;
+
+        if (!user) {
+            console.error("Must be logged in to purchase");
+            return false;
+        }
+
+        if (state.coins < cost) {
+            console.error("Not enough coins");
+            return false;
+        }
+
+        if (state.inventory[itemId] >= limit) {
+            console.error("Inventory limit reached");
+            return false;
+        }
+
+        // Optimistic UI updates
+        set((state) => ({
+            coins: state.coins - cost,
+            inventory: {
+                ...state.inventory,
+                [itemId]: state.inventory[itemId] + 1
+            }
+        }));
+
+        try {
+            // Sync with Firestore
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, {
+                coins: increment(-cost),
+                [`inventory.${itemId}`]: increment(1)
+            });
+            return true;
+        } catch (error) {
+            console.error("Failed to sync purchase with server", error);
+            // Revert on failure
+            set((state) => ({
+                coins: state.coins + cost,
+                inventory: {
+                    ...state.inventory,
+                    [itemId]: state.inventory[itemId] - 1
+                }
+            }));
+            return false;
+        }
+    },
 }));

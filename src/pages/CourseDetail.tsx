@@ -24,7 +24,7 @@ const CourseDetail: React.FC = () => {
     const [selectedQuizModule, setSelectedQuizModule] = useState<Module | null>(null);
     const [selectedDrawerModule, setSelectedDrawerModule] = useState<Module | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const [xpToast, setXpToast] = useState<number | null>(null);
+    const [xpToast, setXpToast] = useState<{ amount: number, boostUsed: boolean } | null>(null);
 
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
@@ -100,9 +100,10 @@ const CourseDetail: React.FC = () => {
                 toggleModuleCompletion(course.id, selectedQuizModule.id);
                 // Award XP based on course difficulty
                 const xpEarned = calculateModuleXP(course.level);
-                awardXP(currentUser.uid, xpEarned);
-                setXpToast(xpEarned);
-                setTimeout(() => setXpToast(null), 2500);
+                awardXP(currentUser.uid, xpEarned).then(({ earned, boostUsed }) => {
+                    setXpToast({ amount: earned, boostUsed });
+                    setTimeout(() => setXpToast(null), 3000);
+                });
             }
             setSelectedQuizModule(null);
         }
@@ -270,9 +271,22 @@ const CourseDetail: React.FC = () => {
             {/* XP Earned Toast */}
             {xpToast !== null && (
                 <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-300">
-                    <div className="bg-card border border-border shadow-xl rounded-2xl px-6 py-3 flex items-center gap-2">
-                        <span className="text-2xl">⚡</span>
-                        <span className="text-lg font-bold text-foreground">+{xpToast} XP</span>
+                    <div className={clsx(
+                        "border shadow-xl rounded-2xl px-6 py-3 flex flex-col items-center gap-1",
+                        xpToast.boostUsed ? "bg-amber-100 border-amber-300 dark:bg-amber-500/10 dark:border-amber-500/30" : "bg-card border-border"
+                    )}>
+                        <div className="flex items-center gap-2">
+                            <span className="text-2xl">{xpToast.boostUsed ? '⚡' : '✨'}</span>
+                            <span className={clsx(
+                                "text-lg font-bold",
+                                xpToast.boostUsed ? "text-amber-700 dark:text-amber-400" : "text-foreground"
+                            )}>
+                                +{xpToast.amount} XP
+                            </span>
+                        </div>
+                        {xpToast.boostUsed && (
+                            <span className="text-xs font-semibold text-amber-600 dark:text-amber-500">2x Boost Applied!</span>
+                        )}
                     </div>
                 </div>
             )}

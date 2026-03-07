@@ -30,20 +30,52 @@ export const deleteUserFirestoreProfile = async (uid: string): Promise<void> => 
 /**
  * Awards XP with optimistic UI + Firestore increment.
  */
-export const awardXP = async (userId: string, amount: number): Promise<void> => {
-    const { addLocalXP } = useStore.getState();
+export const awardXP = async (userId: string, amount: number): Promise<{ earned: number, boostUsed: boolean }> => {
+    const state = useStore.getState();
+    const { addLocalXP, inventory } = state;
+    
+    const hasBoost = inventory.xpBoosts > 0;
+    const finalXP = hasBoost ? amount * 2 : amount;
 
     // Optimistic update
-    addLocalXP(amount);
+    addLocalXP(finalXP);
+    if (hasBoost) {
+        useStore.setState((s) => ({
+            ...s,
+            inventory: {
+                ...s.inventory,
+                xpBoosts: s.inventory.xpBoosts - 1
+            }
+        }));
+    }
 
     try {
-        await updateDoc(doc(db, 'users', userId), { xp: increment(amount) });
+        const updatePayload: Record<string, any> = {
+            xp: increment(finalXP)
+        };
+        
+        if (hasBoost) {
+            updatePayload['inventory.xpBoosts'] = increment(-1);
+        }
+
+        await updateDoc(doc(db, 'users', userId), updatePayload);
         // Evaluate badges after successful XP update
         evaluateAndUnlockBadges(userId);
+        return { earned: finalXP, boostUsed: hasBoost };
     } catch (error) {
         // Rollback
-        addLocalXP(-amount);
+        addLocalXP(-finalXP);
+        if (hasBoost) {
+            useStore.setState((s) => ({
+                ...s,
+                inventory: {
+                    ...s.inventory,
+                    xpBoosts: s.inventory.xpBoosts + 1
+                }
+            }));
+        }
         console.error('XP sync failed:', error);
+        return { earned: 0, boostUsed: false };
     }
 };
 
@@ -58,7 +90,8 @@ export const calculateDailyStreak = async (
     currentStreak: number,
     lastActiveDate: string
 ): Promise<void> => {
-    const { setLocalStreak } = useStore.getState();
+    const state = useStore.getState();
+    const { setLocalStreak, inventory } = state;
 
     // Get today in user's local timezone as 'YYYY-MM-DD'
     const today = new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD
@@ -66,31 +99,70 @@ export const calculateDailyStreak = async (
     // Already checked in today
     if (lastActiveDate === today) return;
 
-    // Check if last active was yesterday
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+    const todayDate = new Date(today);
+    const lastActive = new Date(lastActiveDate);
+    const diffTime = Math.abs(todayDate.getTime() - lastActive.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    let newStreak: number;
-    if (lastActiveDate === yesterdayStr) {
+    let newStreak = currentStreak;
+    let freezeConsumed = false;
+
+    if (diffDays === 1) {
+        // Logged in yesterday
         newStreak = currentStreak + 1;
-    } else {
-        newStreak = 1; // Reset streak
+    } else if (diffDays >= 2) {
+        // Danger Zone: Missed 2+ days
+        if (inventory.streakFreezes > 0) {
+            // Consume freeze, save streak
+            freezeConsumed = true;
+            console.log('🧊 Streak Freeze Consumed!');
+            // In a real app we'd trigger a robust toast: toast.success('🧊 Streak Freeze Consumed! Your streak is safe.');
+            alert('🧊 Streak Freeze Consumed! Your streak is safe.');
+        } else {
+            // Unprotected streak break
+            newStreak = 1;
+            console.log('⚠️ Streak lost!');
+            // toast.error('⚠️ Streak lost! Time to rebuild.');
+        }
     }
 
     // Optimistic update
     setLocalStreak(newStreak, today);
+    if (freezeConsumed) {
+        useStore.setState((s) => ({
+            ...s,
+            inventory: {
+                ...s.inventory,
+                streakFreezes: s.inventory.streakFreezes - 1
+            }
+        }));
+    }
 
     try {
-        await updateDoc(doc(db, 'users', userId), {
+        const updatePayload: Record<string, any> = {
             streak: newStreak,
             lastActiveDate: today,
-        });
+        };
+        
+        if (freezeConsumed) {
+            updatePayload['inventory.streakFreezes'] = increment(-1);
+        }
+
+        await updateDoc(doc(db, 'users', userId), updatePayload);
         // Evaluate badges after successful streak update
         evaluateAndUnlockBadges(userId);
     } catch (error) {
         // Rollback
         setLocalStreak(currentStreak, lastActiveDate);
+        if (freezeConsumed) {
+            useStore.setState((s) => ({
+                ...s,
+                inventory: {
+                    ...s.inventory,
+                    streakFreezes: s.inventory.streakFreezes + 1
+                }
+            }));
+        }
         console.error('Streak sync failed:', error);
     }
 };

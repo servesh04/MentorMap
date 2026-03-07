@@ -15,14 +15,10 @@ export interface BountyQuestion {
 
 const BOUNTY_XP_REWARD = 500;
 
-/**
- * Check if the user can claim today's bounty.
- * TODO: Re-enable daily limit after testing
- */
 export const canClaimBounty = (_lastBountyDate: string): boolean => {
-    return true; // Temporarily disabled for testing
     // const today = new Date().toLocaleDateString('en-CA');
-    // return lastBountyDate !== today;
+    // return _lastBountyDate !== today;
+    return true; // Temporarily disabled for testing
 };
 
 /**

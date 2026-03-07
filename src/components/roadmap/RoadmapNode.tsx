@@ -31,6 +31,7 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = ({
 }) => {
     const store = useStore();
     const [showQuiz, setShowQuiz] = useState(false);
+    const [xpToast, setXpToast] = useState<{ amount: number, boostUsed: boolean } | null>(null);
 
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -52,7 +53,10 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = ({
             const user = store.currentUser;
             if (user && courseLevel) {
                 const xpEarned = calculateModuleXP(courseLevel);
-                awardXP(user.uid, xpEarned);
+                awardXP(user.uid, xpEarned).then(({ earned, boostUsed }) => {
+                    setXpToast({ amount: earned, boostUsed });
+                    setTimeout(() => setXpToast(null), 3500);
+                });
             }
         }
     };
@@ -135,6 +139,30 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = ({
                     topicName={module.title}
                     onMarkComplete={handleQuizPass}
                 />,
+                document.body
+            )}
+
+            {/* XP Earned Toast */}
+            {xpToast !== null && ReactDOM.createPortal(
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-300">
+                    <div className={clsx(
+                        "border shadow-xl rounded-2xl px-6 py-3 flex flex-col items-center gap-1",
+                        xpToast.boostUsed ? "bg-amber-100 border-amber-300 dark:bg-amber-500/10 dark:border-amber-500/30" : "bg-card border-border"
+                    )}>
+                        <div className="flex items-center gap-2">
+                            <span className="text-2xl">{xpToast.boostUsed ? '⚡' : '✨'}</span>
+                            <span className={clsx(
+                                "text-lg font-bold",
+                                xpToast.boostUsed ? "text-amber-700 dark:text-amber-400" : "text-foreground"
+                            )}>
+                                +{xpToast.amount} XP
+                            </span>
+                        </div>
+                        {xpToast.boostUsed && (
+                            <span className="text-xs font-semibold text-amber-600 dark:text-amber-500">2x Boost Applied! You earned {xpToast.amount} XP</span>
+                        )}
+                    </div>
+                </div>,
                 document.body
             )}
         </>

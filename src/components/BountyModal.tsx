@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom';
 import { X, Loader2, Trophy, XCircle, CheckCircle, Sparkles } from 'lucide-react';
 import Confetti from 'react-confetti';
 import clsx from 'clsx';
+import { doc, updateDoc, increment } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { useStore } from '../store/useStore';
 import { generateBountyQuiz, consumeBountyAttempt, awardBountyXP } from '../services/bountyService';
 import type { BountyQuestion } from '../services/bountyService';
 
@@ -25,6 +28,8 @@ const BountyModal: React.FC<BountyModalProps> = ({ isOpen, onClose, userId, modu
     const [showConfetti, setShowConfetti] = useState(false);
     const [xpAwarded, setXpAwarded] = useState(0);
     const [attemptConsumed, setAttemptConsumed] = useState(false);
+    
+    const { inventory } = useStore();
 
     // Fetch quiz and consume attempt when modal opens
     useEffect(() => {
@@ -59,6 +64,49 @@ const BountyModal: React.FC<BountyModalProps> = ({ isOpen, onClose, userId, modu
 
         init();
     }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleReroll = async () => {
+        if (inventory.rerolls <= 0 || loading || showResults) return;
+
+        // Optimistic UI for inventory deduction
+        useStore.setState((s) => ({
+            ...s,
+            inventory: {
+                ...s.inventory,
+                rerolls: s.inventory.rerolls - 1
+            }
+        }));
+
+        setLoading(true);
+        setError(null);
+        setCurrentIndex(0);
+        setSelectedOption(null);
+        setIsLocked(false);
+        setAnswers([]);
+        setShowResults(false);
+
+        try {
+            await updateDoc(doc(db, 'users', userId), {
+                'inventory.rerolls': increment(-1)
+            });
+
+            const quiz = await generateBountyQuiz(moduleTopic);
+            setQuestions(quiz);
+            // Replace with custom toast if available, but standard alert suffices per plan for immediate notification
+        } catch (err: any) {
+            setError(err.message || 'Failed to reroll bounty.');
+            // Revert optimistic update
+            useStore.setState((s) => ({
+                ...s,
+                inventory: {
+                    ...s.inventory,
+                    rerolls: s.inventory.rerolls + 1
+                }
+            }));
+        } finally {
+            setLoading(false);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -136,12 +184,27 @@ const BountyModal: React.FC<BountyModalProps> = ({ isOpen, onClose, userId, modu
                                 <p className="text-xs text-muted-foreground truncate max-w-[200px]">{moduleTopic}</p>
                             </div>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                        >
-                            <X size={18} />
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleReroll}
+                                disabled={inventory.rerolls === 0 || loading || showResults}
+                                className={clsx(
+                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5",
+                                    inventory.rerolls > 0 && !loading && !showResults 
+                                        ? "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-500/20 dark:text-amber-400"
+                                        : "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
+                                )}
+                            >
+                                <span>🎲 Reroll</span>
+                                <span className="bg-background/50 px-1.5 py-0.5 rounded-md">{inventory.rerolls}</span>
+                            </button>
+                            <button
+                                onClick={onClose}
+                                className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Body */}
