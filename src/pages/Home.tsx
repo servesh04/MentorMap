@@ -5,6 +5,7 @@ import { Loader, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { canClaimBounty } from '../services/bountyService';
 import BountyModal from '../components/BountyModal';
+import { RivalryWidget } from '../components/RivalryWidget';
 import { getUserDynamicRank } from '../utils/leveling';
 
 const Home: React.FC = () => {
@@ -104,6 +105,9 @@ const Home: React.FC = () => {
                     {isMaxRank && <span className="text-emerald-600 dark:text-emerald-400 font-medium">🏆 Max rank!</span>}
                 </p>
             </div>
+
+            {/* League Rivalry Hook */}
+            <RivalryWidget />
 
             {/* Continue Learning — Horizontal Carousel */}
             <h3 className="font-bold text-foreground mb-3 text-base">Continue Learning</h3>

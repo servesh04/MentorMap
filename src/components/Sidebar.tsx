@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Compass, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, Compass, Trophy, User, LogOut } from 'lucide-react';
 import clsx from 'clsx';
 import Logo from './Logo';
 import { ThemeToggle } from './ThemeToggle';
@@ -26,6 +26,7 @@ const Sidebar: React.FC = () => {
     const navItems = [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
         { to: '/explore', icon: Compass, label: 'Explore' },
+        { to: '/league', icon: Trophy, label: 'League' },
         { to: '/profile', icon: User, label: 'Profile' },
     ];
 

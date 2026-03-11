@@ -18,6 +18,14 @@ const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
     quizResults: true,
 };
 
+export interface LeagueResult {
+    rank: number;
+    oldLeague: string;
+    newLeague: string;
+    xp: number;
+    status: 'promoted' | 'demoted' | 'safe';
+}
+
 interface AppState {
     // Legacy/Mock Data
     user: MockUser | null;
@@ -58,6 +66,13 @@ interface AppState {
     unlockedBadges: string[];
     addLocalXP: (amount: number) => void;
     setLocalStreak: (streak: number, date: string) => void;
+    
+    // Leagues
+    league: string;
+    currentBucketId: string;
+    pendingLeagueResult: LeagueResult | null;
+    setLeagueData: (league: string, currentBucketId: string) => void;
+    setPendingLeagueResult: (result: LeagueResult | null) => void;
     setLastBountyDate: (date: string) => void;
     unlockBadgeLocal: (badgeId: string) => void;
 
@@ -105,6 +120,13 @@ export const useStore = create<AppState>((set, get) => ({
     unlockedBadges: [],
     addLocalXP: (amount) => set((state) => ({ xp: state.xp + amount })),
     setLocalStreak: (streak, lastActiveDate) => set({ streak, lastActiveDate }),
+    
+    league: 'bronze',
+    currentBucketId: '2026_W11_bronze_1',
+    pendingLeagueResult: null,
+    setLeagueData: (league, currentBucketId) => set({ league, currentBucketId }),
+    setPendingLeagueResult: (pendingLeagueResult) => set({ pendingLeagueResult }),
+
     setLastBountyDate: (lastBountyDate) => set({ lastBountyDate }),
     unlockBadgeLocal: (badgeId) => set((state) => ({
         unlockedBadges: state.unlockedBadges.includes(badgeId)

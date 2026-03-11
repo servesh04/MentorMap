@@ -1,7 +1,8 @@
-import { doc, updateDoc, deleteDoc, increment } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, increment, setDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useStore } from '../store/useStore';
 import { evaluateAndUnlockBadges } from '../utils/badgeEvaluator';
+import { getCurrentWeekString } from '../utils/dateHelpers';
 
 /**
  * Syncs partial user profile data to Firestore.
@@ -59,6 +60,22 @@ export const awardXP = async (userId: string, amount: number): Promise<{ earned:
         }
 
         await updateDoc(doc(db, 'users', userId), updatePayload);
+
+        // Sync to League Bucket
+        const { currentBucketId, currentUser } = state;
+        if (currentBucketId && currentUser) {
+            const bucketRef = doc(db, 'leaderboards', currentBucketId);
+            await setDoc(bucketRef, {
+                participants: {
+                    [userId]: {
+                        weeklyXp: increment(finalXP),
+                        displayName: currentUser.displayName || 'Scholar',
+                        photoURL: currentUser.photoURL || null
+                    }
+                }
+            }, { merge: true });
+        }
+
         // Evaluate badges after successful XP update
         evaluateAndUnlockBadges(userId);
         return { earned: finalXP, boostUsed: hasBoost };
@@ -164,5 +181,75 @@ export const calculateDailyStreak = async (
             }));
         }
         console.error('Streak sync failed:', error);
+    }
+};
+
+/**
+ * Transactional Matchmaking Engine
+ * Assigns a user to the current week's correct bucket, scaling horizontally when buckets reach 30 players.
+ */
+export const assignToWeeklyLeague = async (userId: string, leagueType: string): Promise<string | null> => {
+    const weekString = getCurrentWeekString();
+    const metadataRef = doc(db, 'leaderboards', `metadata_${weekString}_${leagueType}`);
+    const userRef = doc(db, 'users', userId);
+
+    try {
+        const newBucketId = await runTransaction(db, async (transaction) => {
+            const metadataSnap = await transaction.get(metadataRef);
+            
+            let currentBucketIndex = 1;
+            let playerCount = 0;
+
+            if (metadataSnap.exists()) {
+                const metaData = metadataSnap.data();
+                currentBucketIndex = metaData.currentBucketIndex || 1;
+                playerCount = metaData.playerCount || 0;
+            }
+
+            // Logic: Is the current bucket full? (30 players)
+            if (playerCount >= 30) {
+                currentBucketIndex += 1;
+                playerCount = 0; // Starts at 0, incremented below
+            }
+
+            const targetBucketId = `${weekString}_${leagueType}_${currentBucketIndex}`;
+            const targetBucketRef = doc(db, 'leaderboards', targetBucketId);
+
+            // Write 1: Update Metadata (increment count, set index)
+            transaction.set(metadataRef, {
+                currentBucketIndex,
+                playerCount: playerCount + 1
+            }, { merge: true });
+
+            // Write 2: Add to Bucket Document Map
+            const state = useStore.getState();
+            const currentUser = state.currentUser;
+            
+            transaction.set(targetBucketRef, {
+                participants: {
+                    [userId]: {
+                        weeklyXp: 0, // Reset XP for the new week
+                        displayName: currentUser?.displayName || 'Scholar',
+                        photoURL: currentUser?.photoURL || null
+                    }
+                }
+            }, { merge: true });
+
+            // Write 3: Update User Profile
+            transaction.update(userRef, {
+                currentBucketId: targetBucketId
+            });
+
+            return targetBucketId;
+        });
+
+        // Sync local state
+        useStore.getState().setLeagueData(leagueType, newBucketId);
+        console.log(`🚀 Successfully matched into bucket: ${newBucketId}`);
+        return newBucketId;
+
+    } catch (error) {
+        console.error("Matchmaking Transaction Failed:", error);
+        return null;
     }
 };

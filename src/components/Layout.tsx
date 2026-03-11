@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { LayoutDashboard, Compass, User } from 'lucide-react';
+import { LayoutDashboard, Compass, Trophy, User } from 'lucide-react';
 import clsx from 'clsx';
 import Logo from './Logo';
 import Sidebar from './Sidebar';
@@ -57,6 +57,19 @@ const Layout: React.FC = () => {
                 >
                     <Compass className="w-6 h-6" />
                     <span className="text-xs mt-1 font-medium">Explore</span>
+                </NavLink>
+
+                <NavLink
+                    to="/league"
+                    className={({ isActive }) =>
+                        clsx(
+                            "flex flex-col items-center justify-center w-full h-full transition-all duration-200 active:scale-95",
+                            isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                        )
+                    }
+                >
+                    <Trophy className="w-6 h-6" />
+                    <span className="text-xs mt-1 font-medium">League</span>
                 </NavLink>
 
                 <NavLink

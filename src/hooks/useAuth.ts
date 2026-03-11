@@ -3,10 +3,11 @@ import { onAuthStateChanged, signInWithPopup, signOut, createUserWithEmailAndPas
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { useStore } from '../store/useStore';
-import { calculateDailyStreak } from '../services/userService';
+import { calculateDailyStreak, assignToWeeklyLeague } from '../services/userService';
+import { getCurrentWeekString } from '../utils/dateHelpers';
 
 export const useAuthListener = () => {
-    const { setCurrentUser, setUserRole, setAuthLoading, setActiveCourses, setNotificationPrefs, setLocalStreak, addLocalXP } = useStore();
+    const { setCurrentUser, setUserRole, setAuthLoading, setActiveCourses, setNotificationPrefs, setLocalStreak, addLocalXP, setLeagueData, setPendingLeagueResult } = useStore();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -31,6 +32,28 @@ export const useAuthListener = () => {
                         const unlockedBadges = data.unlockedBadges || [];
                         addLocalXP(xp);
                         setLocalStreak(streak, lastActiveDate);
+
+                        const league = data.league || 'bronze';
+                        let currentBucketId = data.currentBucketId || '2026_W11_bronze_1';
+                        
+                        // Extract pending league result if present
+                        if (data.pendingLeagueResult) {
+                            setPendingLeagueResult(data.pendingLeagueResult);
+                        }
+
+                        const currentWeek = getCurrentWeekString();
+                        const expectedPrefix = `${currentWeek}_${league}`;
+
+                        if (!currentBucketId.startsWith(expectedPrefix)) {
+                            console.log(`Intercepted stale bucket: ${currentBucketId}. Reassigning to week ${currentWeek}...`);
+                            const newBucketId = await assignToWeeklyLeague(user.uid, league);
+                            if (newBucketId) {
+                                currentBucketId = newBucketId;
+                            }
+                        }
+
+                        setLeagueData(league, currentBucketId);
+
                         useStore.getState().setLastBountyDate(lastBountyDate);
                         // Load badges
                         unlockedBadges.forEach((id: string) => useStore.getState().unlockBadgeLocal(id));
