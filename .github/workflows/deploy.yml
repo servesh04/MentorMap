@@ -6,8 +6,8 @@ on:
       - main
 
 env:
-  PROJECT_ID: mentormap-prod-12345 # ⚠️ CHANGE THIS to your exact GCP Project ID
-  REGION: asia-south1              # ⚠️ Change if you picked a different region
+  PROJECT_ID: mentormap-prod
+  REGION: asia-south1            
   REPO_NAME: mentormap-repo
   SERVICE_NAME: mentormap-frontend
 
