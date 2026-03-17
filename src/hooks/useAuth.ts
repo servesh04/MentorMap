@@ -85,7 +85,25 @@ export const useAuth = () => {
 
     const login = async () => {
         try {
-            await signInWithPopup(auth, googleProvider);
+            const result = await signInWithPopup(auth, googleProvider);
+            const user = result.user;
+            
+            // Ensure Firestore document exists on first login
+            const userRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userRef);
+            
+            if (!userDoc.exists()) {
+                await setDoc(userRef, {
+                    displayName: user.displayName || 'Scholar',
+                    email: user.email,
+                    role: 'beginner',
+                    xp: 0,
+                    streak: 0,
+                    league: 'bronze',
+                    active_courses: [],
+                    createdAt: new Date().toISOString()
+                });
+            }
         } catch (error: any) {
             console.error("Login failed:", error);
             alert(`Login failed: ${error.message}`);
@@ -94,7 +112,20 @@ export const useAuth = () => {
 
     const signupWithEmail = async (email: string, password: string) => {
         try {
-            await createUserWithEmailAndPassword(auth, email, password);
+            const result = await createUserWithEmailAndPassword(auth, email, password);
+            const user = result.user;
+            
+            // Create initial Firestore document
+            await setDoc(doc(db, 'users', user.uid), {
+                displayName: 'Scholar',
+                email: user.email,
+                role: 'beginner',
+                xp: 0,
+                streak: 0,
+                league: 'bronze',
+                active_courses: [],
+                createdAt: new Date().toISOString()
+            });
         } catch (error: any) {
             console.error("Signup failed:", error);
             throw error;

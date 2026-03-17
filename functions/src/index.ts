@@ -1,5 +1,6 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { sampleBots, generateBotXpValues } from './botPool';
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -62,6 +63,9 @@ export const resolveWeeklyLeagues = functions.pubsub
 
                 // Apply Matchmaking Logic
                 for (const user of ladder) {
+                    // Skip bots — no users doc to update
+                    if (user.uid.startsWith('bot_')) continue;
+
                     const userRef = db.collection('users').doc(user.uid);
                     // Extract current league from bucket string: 2026_W11_bronze_1 => bronze
                     // Standard split array: [year, week, league, index]
@@ -119,3 +123,64 @@ export const resolveWeeklyLeagues = functions.pubsub
             return null;
         }
     });
+
+/**
+ * Callable Cloud Function: Seeds 29 bots into a freshly created bucket.
+ * Called from the client after a real user is the first to join a bucket.
+ */
+export const seedBotsIntoBucket = functions.https.onCall(async (data, context) => {
+    const bucketId = data.bucketId;
+
+    if (!bucketId || typeof bucketId !== 'string') {
+        throw new functions.https.HttpsError('invalid-argument', 'bucketId is required.');
+    }
+
+    try {
+        const bucketRef = db.collection('leaderboards').doc(bucketId);
+        const bucketSnap = await bucketRef.get();
+
+        // Idempotent guard: only seed if bucket has <= 1 participant (the real user)
+        if (bucketSnap.exists) {
+            const participants = bucketSnap.data()?.participants || {};
+            if (Object.keys(participants).length > 1) {
+                console.log(`Bucket ${bucketId} already has ${Object.keys(participants).length} participants. Skipping seed.`);
+                return { success: true, message: 'Already seeded.' };
+            }
+        }
+
+        // Sample 29 bots and generate XP values
+        const bots = sampleBots(29);
+        const xpValues = generateBotXpValues();
+
+        // Build the participants map payload
+        const botParticipants: Record<string, any> = {};
+        bots.forEach((bot, index) => {
+            botParticipants[bot.id] = {
+                weeklyXp: xpValues[index],
+                displayName: bot.displayName,
+                photoURL: bot.photoURL
+            };
+        });
+
+        // Merge bots into the bucket
+        await bucketRef.set({ participants: botParticipants }, { merge: true });
+
+        // Update metadata playerCount to 30
+        // Extract league and week from bucketId: e.g., 2026_W12_bronze_1
+        const parts = bucketId.split('_');
+        if (parts.length >= 4) {
+            const weekString = `${parts[0]}_${parts[1]}`;
+            const league = parts[2];
+            const metadataRef = db.collection('leaderboards').doc(`metadata_${weekString}_${league}`);
+            await metadataRef.set({ playerCount: 30 }, { merge: true });
+        }
+
+        console.log(`🤖 Seeded 29 bots into bucket: ${bucketId}`);
+        return { success: true, message: `Seeded 29 bots into ${bucketId}` };
+
+    } catch (error) {
+        console.error('Failed to seed bots:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to seed bots.');
+    }
+});
+

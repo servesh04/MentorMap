@@ -1,5 +1,6 @@
 import { doc, updateDoc, deleteDoc, increment, setDoc, runTransaction } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../lib/firebase';
 import { useStore } from '../store/useStore';
 import { evaluateAndUnlockBadges } from '../utils/badgeEvaluator';
 import { getCurrentWeekString } from '../utils/dateHelpers';
@@ -215,10 +216,14 @@ export const assignToWeeklyLeague = async (userId: string, leagueType: string): 
             const targetBucketId = `${weekString}_${leagueType}_${currentBucketIndex}`;
             const targetBucketRef = doc(db, 'leaderboards', targetBucketId);
 
+            // Create an explicit expiry timestamp for Firestore TTL (14 days into the future)
+            const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
             // Write 1: Update Metadata (increment count, set index)
             transaction.set(metadataRef, {
                 currentBucketIndex,
-                playerCount: playerCount + 1
+                playerCount: playerCount + 1,
+                expiresAt
             }, { merge: true });
 
             // Write 2: Add to Bucket Document Map
@@ -226,6 +231,7 @@ export const assignToWeeklyLeague = async (userId: string, leagueType: string): 
             const currentUser = state.currentUser;
             
             transaction.set(targetBucketRef, {
+                expiresAt,
                 participants: {
                     [userId]: {
                         weeklyXp: 0, // Reset XP for the new week
@@ -246,6 +252,19 @@ export const assignToWeeklyLeague = async (userId: string, leagueType: string): 
         // Sync local state
         useStore.getState().setLeagueData(leagueType, newBucketId);
         console.log(`🚀 Successfully matched into bucket: ${newBucketId}`);
+
+        // Fire-and-forget: seed bots into the fresh bucket
+        try {
+            const seedBots = httpsCallable(functions, 'seedBotsIntoBucket');
+            seedBots({ bucketId: newBucketId }).then((result) => {
+                console.log('🤖 Bot seeding result:', result.data);
+            }).catch((err) => {
+                console.warn('Bot seeding failed (non-critical):', err);
+            });
+        } catch (e) {
+            console.warn('Could not invoke bot seeder:', e);
+        }
+
         return newBucketId;
 
     } catch (error) {

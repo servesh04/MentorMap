@@ -40,5 +40,11 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow read, update, delete: if false;
     }
+
+    // 6. LEADERBOARDS COLLECTION (Matchmaking & Ranks)
+    match /leaderboards/{bucketId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
   }
 }
