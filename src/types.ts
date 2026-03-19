@@ -11,6 +11,8 @@ export interface Module {
     description?: string; // Brief summary of the module
     type: 'video' | 'quiz';
     duration: string; // e.g., "10 min"
+    youtubeQuery?: string; // Gemini-optimized query string for YouTube
+    articleQuery?: string; // Gemini-optimized query string for Google CSE
     quiz?: {
         questions: QuizQuestion[];
         passingScore: number; // Percentage, e.g., 80

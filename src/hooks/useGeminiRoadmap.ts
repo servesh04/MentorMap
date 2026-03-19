@@ -47,19 +47,18 @@ Structure:
 { 
   "modules": [
     { 
-      "id": "string (unique)", 
-      "title": "string", 
-      "description": "string (brief summary of what will be covered)",
+      "id": "string (unique, e.g., 'step-1', 'step-2')", 
+      "title": "string (descriptive title)", 
+      "description": "string (1-2 sentence summary of what will be covered)",
       "type": "video", 
-      "duration": "string (e.g. 10 min)" 
+      "duration": "string (e.g. 10 min)",
+      "youtubeQuery": "string (Highly specific YouTube search query. Append names of top reputable channels for this domain, e.g., 'Web Dev Simplified OR Fireship' for programming. Make it laser-focused to find the absolute best tutorial.)",
+      "articleQuery": "string (Highly specific Google search query. Target official docs or top-tier reading material, e.g., 'MDN' or 'official documentation' or 'trusted guide'.)"
     }
   ],
   "progressionTitles": ["beginner title", "novice title", "intermediate title", "advanced title", "master title"]
 }
-The 'id' should be unique (e.g., 'step-1', 'step-2').
-The 'title' should be descriptive.
-The 'description' should be a 1-2 sentence summary of the module.
-Create at least 5-7 modules covering beginner to advanced concepts.
+Create at least 5-7 modules covering beginner to advanced concepts for the topic. Ensure ALL fields are populated for each module, including 'youtubeQuery' and 'articleQuery'.
 Additionally, generate an array of exactly 5 progression titles for this specific topic under the key 'progressionTitles'. These should be creative, topic-specific rank names ranging from absolute beginner to absolute master (e.g., for Cooking: ["Prep Cook", "Line Cook", "Sous Chef", "Head Chef", "Executive Chef"]).
             `;
 
