@@ -51,7 +51,11 @@ Structure:
       "title": "string", 
       "description": "string (brief summary of what will be covered)",
       "type": "video", 
-      "duration": "string (e.g. 10 min)" 
+      "duration": "string (e.g. 10 min)",
+      "searchHints": {
+        "ytQuery": "string (optimized YouTube search query — see instructions below)",
+        "articleQuery": "string (optimized Google search query — see instructions below)"
+      }
     }
   ],
   "progressionTitles": ["beginner title", "novice title", "intermediate title", "advanced title", "master title"]
@@ -61,6 +65,23 @@ The 'title' should be descriptive.
 The 'description' should be a 1-2 sentence summary of the module.
 Create at least 5-7 modules covering beginner to advanced concepts.
 Additionally, generate an array of exactly 5 progression titles for this specific topic under the key 'progressionTitles'. These should be creative, topic-specific rank names ranging from absolute beginner to absolute master (e.g., for Cooking: ["Prep Cook", "Line Cook", "Sous Chef", "Head Chef", "Executive Chef"]).
+
+IMPORTANT — searchHints instructions:
+For 'searchHints.ytQuery': Think about which YouTube educator or channel is BEST known for teaching this specific sub-topic. Include the creator's channel name in the query so the top result is the ideal video. Examples:
+  - For React hooks → "Web Dev Simplified React Hooks"
+  - For CSS Flexbox → "Kevin Powell CSS Flexbox tutorial"
+  - For Python basics → "Corey Schafer Python tutorial"
+  - For System Design → "NeetCode system design"
+  - For Machine Learning → "3Blue1Brown neural networks"
+  - For Data Structures → "Abdul Bari data structures"
+  Choose the most reputable and popular educator for each specific module topic.
+
+For 'searchHints.articleQuery': Think about which website has the definitive article or guide for this topic. Include the site name. Examples:
+  - For JavaScript closures → "freeCodeCamp JavaScript closures tutorial"
+  - For CSS Grid → "MDN CSS Grid guide"
+  - For Python decorators → "Real Python decorators guide"
+  - For SQL joins → "W3Schools SQL joins tutorial"
+  Choose the most authoritative and beginner-friendly source for each module topic.
             `;
 
             try {

@@ -7,7 +7,7 @@ export interface Article {
     snippet: string;
 }
 
-export const useArticleSearch = (query: string) => {
+export const useArticleSearch = (query: string, optimizedQuery?: string) => {
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export const useArticleSearch = (query: string) => {
 
             // 2. Real API Call
             try {
-                const url = `https://www.googleapis.com/customsearch/v1?key=${API_KEY}&cx=${CX_ID}&q=${encodeURIComponent(query)}&num=3`;
+                const url = `https://www.googleapis.com/customsearch/v1?key=${API_KEY}&cx=${CX_ID}&q=${encodeURIComponent(optimizedQuery || query)}&num=3`;
                 const response = await fetch(url);
                 const data = await response.json();
 

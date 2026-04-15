@@ -4,6 +4,7 @@ import { useArticleSearch } from '../../hooks/useArticleSearch';
 
 interface ResourceListProps {
     query: string;
+    optimizedQuery?: string;
 }
 
 const getSourceBadge = (displayLink: string) => {
@@ -22,8 +23,8 @@ const getSourceBadge = (displayLink: string) => {
     return { label: 'Web', color: 'bg-blue-50 text-blue-600' };
 };
 
-const ResourceList: React.FC<ResourceListProps> = ({ query }) => {
-    const { articles, loading, error } = useArticleSearch(query);
+const ResourceList: React.FC<ResourceListProps> = ({ query, optimizedQuery }) => {
+    const { articles, loading, error } = useArticleSearch(query, optimizedQuery);
 
     if (loading) {
         return (

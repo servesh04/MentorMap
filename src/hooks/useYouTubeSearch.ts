@@ -8,7 +8,7 @@ interface VideoResult {
     embedId: string;
 }
 
-export const useYouTubeSearch = (query: string) => {
+export const useYouTubeSearch = (query: string, optimizedQuery?: string) => {
     const [video, setVideo] = useState<VideoResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export const useYouTubeSearch = (query: string) => {
 
             try {
                 const response = await fetch(
-                    `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${encodeURIComponent(query + ' tutorial')}&type=video&key=${API_KEY}`
+                    `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${encodeURIComponent(optimizedQuery || (query + ' tutorial'))}&type=video&key=${API_KEY}`
                 );
                 const data = await response.json();
 

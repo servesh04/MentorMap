@@ -21,7 +21,8 @@ interface StepDetailDrawerProps {
 const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, module, courseId, courseLevel }) => {
     // Only search if we have an open module
     const searchQuery = module ? `${module.title} tutorial` : '';
-    const { video, loading: videoLoading } = useYouTubeSearch(isOpen ? searchQuery : '');
+    const ytHintQuery = module?.searchHints?.ytQuery;
+    const { video, loading: videoLoading } = useYouTubeSearch(isOpen ? searchQuery : '', isOpen ? ytHintQuery : undefined);
 
     // For completion tracking right from the drawer
     const store = useStore();
@@ -150,7 +151,7 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
                             <BookOpen className="w-5 h-5 text-indigo-500" />
                             Recommended Reading
                         </h3>
-                        <ResourceList query={searchQuery} />
+                        <ResourceList query={searchQuery} optimizedQuery={module?.searchHints?.articleQuery} />
                     </section>
 
                     {/* AI Mentor Chat */}
