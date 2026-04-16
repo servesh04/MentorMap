@@ -1,14 +1,13 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
-import RoleSelectionModal from '../Onboarding/RoleSelectionModal';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-    const { currentUser, authLoading, userRole } = useStore();
+    const { currentUser, authLoading } = useStore();
 
     if (authLoading) {
         return (
@@ -22,15 +21,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         return <Navigate to="/login" replace />;
     }
 
-    // If user is authenticated but has no role, show onboarding modal overlay
-    // The children are still rendered in background or we could hide them. 
-    // Here we render children but overlay the modal.
-    return (
-        <>
-            {!userRole && <RoleSelectionModal />}
-            {children}
-        </>
-    );
+    return <>{children}</>;
 };
 
 export default ProtectedRoute;

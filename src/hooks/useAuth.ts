@@ -60,7 +60,7 @@ export const useAuthListener = () => {
                         // Calculate streak for today
                         calculateDailyStreak(user.uid, streak, lastActiveDate);
                     } else {
-                        setUserRole(null); // Triggers onboarding
+                        setUserRole('beginner'); // Default role for new users
                         setActiveCourses([]);
                     }
                 } catch (error) {

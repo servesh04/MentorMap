@@ -4,7 +4,6 @@ import { ArrowLeft, PlayCircle, FileText, CheckCircle, LayoutList, Map as MapIco
 import { useStore } from '../store/useStore';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import ResourceRecommender from '../components/ResourceRecommender';
 import clsx from 'clsx';
 import RoadmapView from '../components/roadmap/RoadmapView';
 import QuizModal from '../modals/QuizModal';
@@ -227,7 +226,6 @@ const CourseDetail: React.FC = () => {
                             />
                         )}
 
-                        <ResourceRecommender />
                     </>
                 )}
             </div>
