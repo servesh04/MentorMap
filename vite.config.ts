@@ -10,6 +10,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.jpg', 'ios.png'],
+      workbox: {
+        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MiB to allow precaching split WebLLM chunks for offline use
+      },
       manifest: {
         name: 'MentorMap - AI Learning',
         short_name: 'MentorMap',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Youtube, BookOpen, CheckCircle, Circle } from 'lucide-react';
+import { X, Youtube, BookOpen, CheckCircle, Circle, Sparkles } from 'lucide-react';
 import { useYouTubeSearch } from '../../hooks/useYouTubeSearch';
 import ResourceList from './ResourceList';
 import QuizModal from './QuizModal';
@@ -31,6 +31,28 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
     // Quiz modal state
     const [showQuiz, setShowQuiz] = useState(false);
     const [xpToast, setXpToast] = useState<{ amount: number, boostUsed: boolean } | null>(null);
+
+    // AI Mentor overlay states
+    const [isChatExpanded, setIsChatExpanded] = useState(false);
+    const [chatInitialQuery, setChatInitialQuery] = useState('');
+
+    // Collapse chat on module change
+    React.useEffect(() => {
+        setIsChatExpanded(false);
+        setChatInitialQuery('');
+    }, [module?.id]);
+
+    const handleSparkClick = (type: 'explain' | 'summarize_video' | 'confused') => {
+        if (!module) return;
+        setIsChatExpanded(true);
+        if (type === 'explain') {
+            setChatInitialQuery(`Can you explain the core concepts of the module '${module.title}' in simple terms?`);
+        } else if (type === 'summarize_video') {
+            setChatInitialQuery(`Can you summarize the recommended video tutorial: '${video?.title || module.title}'?`);
+        } else if (type === 'confused') {
+            setChatInitialQuery(`I am confused about the recommended reading resources for the module '${module.title}'. Can you provide a high-level overview?`);
+        }
+    };
 
     const handleToggleComplete = () => {
         if (courseId && module) {
@@ -104,8 +126,17 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
                 <div className="p-6 overflow-y-auto h-[calc(100vh-88px)] space-y-8 bg-background/50">
 
                     {module?.description && (
-                        <div className="bg-primary/5 p-4 rounded-xl text-foreground text-sm leading-relaxed border border-primary/10">
-                            {module.description}
+                        <div className="space-y-2">
+                            <div className="bg-primary/5 p-4 rounded-xl text-foreground text-sm leading-relaxed border border-primary/10">
+                                {module.description}
+                            </div>
+                            <button
+                                onClick={() => handleSparkClick('explain')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all hover:scale-[1.02] cursor-pointer"
+                            >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                Explain this module
+                            </button>
                         </div>
                     )}
 
@@ -133,9 +164,18 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
                                         allowFullScreen
                                     ></iframe>
                                 </div>
-                                <div>
-                                    <h4 className="font-semibold text-foreground line-clamp-1">{video.title}</h4>
-                                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{video.description}</p>
+                                <div className="space-y-2">
+                                    <div>
+                                        <h4 className="font-semibold text-foreground line-clamp-1">{video.title}</h4>
+                                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{video.description}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleSparkClick('summarize_video')}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all hover:scale-[1.02] cursor-pointer"
+                                    >
+                                        <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                                        Summarize this video
+                                    </button>
                                 </div>
                             </div>
                         ) : (
@@ -146,24 +186,33 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
                     </section>
 
                     {/* Resources Section */}
-                    <section>
+                    <section className="space-y-3">
                         <h3 className="flex items-center gap-2 font-bold text-foreground mb-4">
                             <BookOpen className="w-5 h-5 text-indigo-500" />
                             Recommended Reading
                         </h3>
                         <ResourceList query={searchQuery} optimizedQuery={module?.searchHints?.articleQuery} />
+                        <button
+                            onClick={() => handleSparkClick('confused')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all hover:scale-[1.02] cursor-pointer mt-1"
+                        >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Confused about readings?
+                        </button>
                     </section>
-
-                    {/* AI Mentor Chat */}
-                    {module && (
-                        <section>
-                            <MentorChatWidget
-                                nodeTitle={module.title}
-                                currentResource={video?.title}
-                            />
-                        </section>
-                    )}
                 </div>
+
+                {/* AI Mentor Chat Overlay Dock */}
+                {module && (
+                    <MentorChatWidget
+                        nodeTitle={module.title}
+                        currentResource={video?.title}
+                        isExpanded={isChatExpanded}
+                        setIsExpanded={setIsChatExpanded}
+                        initialQuery={chatInitialQuery}
+                        clearInitialQuery={() => setChatInitialQuery('')}
+                    />
+                )}
             </div>
 
             {/* Quiz Modal */}

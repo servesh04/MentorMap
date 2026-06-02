@@ -26,6 +26,11 @@ export interface LeagueResult {
     status: 'promoted' | 'demoted' | 'safe';
 }
 
+export interface OfflineSettings {
+    offlineModeEnabled: boolean;
+    hasAcceptedDownload: boolean;
+}
+
 interface AppState {
     // Legacy/Mock Data
     user: MockUser | null;
@@ -87,6 +92,10 @@ interface AppState {
     openShop: () => void;
     closeShop: () => void;
     purchaseItem: (itemId: 'streakFreezes' | 'xpBoosts' | 'rerolls', cost: number, limit: number) => Promise<boolean>;
+
+    // Offline AI Settings
+    offlineSettings: OfflineSettings;
+    setOfflineSettings: (settings: Partial<OfflineSettings>) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -133,6 +142,32 @@ export const useStore = create<AppState>((set, get) => ({
             ? state.unlockedBadges
             : [...state.unlockedBadges, badgeId]
     })),
+
+    offlineSettings: {
+        offlineModeEnabled: false,
+        hasAcceptedDownload: false,
+        ...(typeof window !== 'undefined'
+            ? (() => {
+                  try {
+                      const saved = localStorage.getItem('mentormap_offline_settings');
+                      return saved ? JSON.parse(saved) : {};
+                  } catch (e) {
+                      return {};
+                  }
+              })()
+            : {})
+    },
+    setOfflineSettings: (settings) => set((state) => {
+        const newSettings = { ...state.offlineSettings, ...settings };
+        if (typeof window !== 'undefined') {
+            try {
+                localStorage.setItem('mentormap_offline_settings', JSON.stringify(newSettings));
+            } catch (e) {
+                console.error("Failed to save offline settings to localStorage", e);
+            }
+        }
+        return { offlineSettings: newSettings };
+    }),
 
     toggleModuleCompletion: (courseId, moduleId) => set((state) => {
         const currentCourseModules = state.completedModules[courseId] || [];

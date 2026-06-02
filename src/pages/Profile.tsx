@@ -5,7 +5,8 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import AccountSettingsModal from '../components/AccountSettingsModal';
 import HelpSupportModal from '../components/HelpSupportModal';
 import NotificationsModal from '../components/NotificationsModal';
-import { LogOut, Settings, Bell, HelpCircle, ChevronRight, Lock } from 'lucide-react';
+import OfflineAIModal from '../components/OfflineAIModal';
+import { LogOut, Settings, Bell, HelpCircle, ChevronRight, Lock, Cpu } from 'lucide-react';
 import { BADGE_REGISTRY } from '../constants/badges';
 import clsx from 'clsx';
 import { useCourses } from '../hooks/useCourses';
@@ -13,7 +14,7 @@ import { getUserDynamicRank } from '../utils/leveling';
 
 const Profile: React.FC = () => {
     const { logout } = useAuth();
-    const { currentUser, unlockedBadges, xp, activeCourses } = useStore();
+    const { currentUser, unlockedBadges, xp, activeCourses, offlineSettings } = useStore();
     const { courses } = useCourses();
 
     // Get progression titles from the first active course (if any)
@@ -29,6 +30,7 @@ const Profile: React.FC = () => {
     const [showAccountSettings, setShowAccountSettings] = useState(false);
     const [showHelpSupport, setShowHelpSupport] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showOfflineAI, setShowOfflineAI] = useState(false);
 
     return (
         <div className="p-4 pb-24">
@@ -108,6 +110,23 @@ const Profile: React.FC = () => {
                     <ThemeToggle />
                 </div>
 
+                {/* Offline AI */}
+                <button
+                    onClick={() => setShowOfflineAI(true)}
+                    className="w-full text-left px-5 py-3.5 border-b border-border flex items-center justify-between active:bg-muted active:scale-[0.99] transition-all duration-200 text-foreground"
+                >
+                    <div className="flex items-center gap-3">
+                        <Cpu size={18} className="text-muted-foreground" />
+                        <span className="text-sm">Offline AI Settings</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">
+                            {offlineSettings.offlineModeEnabled ? "Local AI" : "Cloud"}
+                        </span>
+                        <ChevronRight size={16} className="text-muted-foreground" />
+                    </div>
+                </button>
+
                 {/* Account Settings */}
                 <button
                     onClick={() => setShowAccountSettings(true)}
@@ -169,6 +188,10 @@ const Profile: React.FC = () => {
             <NotificationsModal
                 isOpen={showNotifications}
                 onClose={() => setShowNotifications(false)}
+            />
+            <OfflineAIModal
+                isOpen={showOfflineAI}
+                onClose={() => setShowOfflineAI(false)}
             />
         </div>
     );
