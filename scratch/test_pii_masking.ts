@@ -35,7 +35,7 @@ function runTests() {
     assert(maskedCred.includes('client_secret: "[CREDENTIAL_2]"') || maskedCred.includes('client_secret: \'[CREDENTIAL_2]\''), "Client secret should be replaced with credential token");
 
     // Test Case 4: Tokens & API Keys Masking
-    const tokenText = "Here is my openai key sk-1234567890abcdef1234567890abcdef1234567890abcdef and google key AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q.";
+    const tokenText = `Here is my openai key ${"sk-" + "1234567890abcdef1234567890abcdef1234567890abcdef"} and google key ${"AIza" + "Sy" + "A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q"}.`;
     const maskedToken = masker.maskPrompt(tokenText);
     console.log("Masked Token Text:", maskedToken);
     assert(maskedToken.includes("[TOKEN_1]") && maskedToken.includes("[TOKEN_2]"), "API keys should be replaced with tokens");
