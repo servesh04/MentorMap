@@ -1,4 +1,5 @@
 import * as functions from 'firebase-functions/v1';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import * as admin from 'firebase-admin';
 import { sampleBots, generateBotXpValues } from './botPool';
 
@@ -172,6 +173,7 @@ export const seedBotsIntoBucket = functions.https.onCall(async (data, context) =
             const weekString = `${parts[0]}_${parts[1]}`;
             const league = parts[2];
             const metadataRef = db.collection('leaderboards').doc(`metadata_${weekString}_${league}`);
+
             await metadataRef.set({ playerCount: 30 }, { merge: true });
         }
 
@@ -184,3 +186,235 @@ export const seedBotsIntoBucket = functions.https.onCall(async (data, context) =
     }
 });
 
+/**
+ * Nightly scheduled Firebase v2 Cloud Function:
+ * Aggregates platform-wide user progress, chat logs, security telemetry,
+ * and game state to write a single report document.
+ */
+export const aggregateDashboardMetrics = onSchedule({
+    schedule: '0 0 * * *', // Run nightly at midnight
+    timeZone: 'America/New_York',
+    memory: '256MiB',
+}, async (event) => {
+    console.log('Starting nightly Firestore Aggregation Pipeline...');
+    try {
+        await runAggregation(db, admin);
+        console.log('✅ Nightly Firestore Aggregation Pipeline completed successfully.');
+    } catch (error) {
+        console.error('CRITICAL: Nightly Firestore Aggregation Pipeline failed:', error);
+    }
+});
+
+/**
+ * Execute the complete aggregation pipeline on the provided Firestore instance.
+ */
+export async function runAggregation(db: any, admin: any): Promise<void> {
+    // 1. Savings Tracker (Metric 1)
+    const webGpuCountSnap = await db.collection('chat_logs').where('inferenceType', '==', 'webgpu').count().get();
+    const groqCountSnap = await db.collection('chat_logs').where('inferenceType', '==', 'groq').count().get();
+    
+    const webGpuCount = webGpuCountSnap.data().count || 0;
+    const groqCount = groqCountSnap.data().count || 0;
+    const totalChats = webGpuCount + groqCount;
+    const webGpuPercent = totalChats > 0 ? (webGpuCount / totalChats) * 100 : 0;
+    const groqPercent = totalChats > 0 ? (groqCount / totalChats) * 100 : 0;
+
+    // 2. Cost-Per-Learner (Metric 2)
+    const usersCountSnap = await db.collection('users').count().get();
+    const totalActiveUsers = usersCountSnap.data().count || 0;
+    
+    const baseInfrastructureCost = 50.00; // Mock base cost in USD
+    const groqApiCost = groqCount * 0.0015; // Estimated Groq cost ($0.0015/query)
+    const totalOperations = totalChats;
+    const estimatedCostPerLearner = totalActiveUsers > 0 
+        ? (baseInfrastructureCost + groqApiCost) / totalActiveUsers 
+        : 0;
+
+    // 3. Security Intercepts (Metric 3)
+    const telemetryAggSnap = await db.collection('telemetry_logs').aggregate({
+        emails: admin.firestore.AggregateField.sum('pii_blocked.emails'),
+        tokens: admin.firestore.AggregateField.sum('pii_blocked.tokens'),
+        networking: admin.firestore.AggregateField.sum('pii_blocked.networking'),
+        credentials: admin.firestore.AggregateField.sum('pii_blocked.credentials'),
+    }).get();
+
+    const emails = telemetryAggSnap.data().emails || 0;
+    const tokens = telemetryAggSnap.data().tokens || 0;
+    const networking = telemetryAggSnap.data().networking || 0;
+    const credentials = telemetryAggSnap.data().credentials || 0;
+    const totalBlocked = emails + tokens + networking + credentials;
+
+    // 4. Curriculum Heatmap (Metric 4)
+    const roadmapsSnap = await db.collection('roadmaps').get();
+    const curriculumHeatmap: Record<string, number> = {};
+    roadmapsSnap.forEach((doc: any) => {
+        const data = doc.data();
+        const topic = data.topic || data.title || 'General';
+        curriculumHeatmap[topic] = (curriculumHeatmap[topic] || 0) + 1;
+    });
+
+    // 5. Skill Velocity (Metric 5)
+    const progressSnap = await db.collection('module_progress')
+        .where('moduleCompletedAt', '!=', null)
+        .get();
+
+    let totalDeltaSeconds = 0;
+    let completedCount = 0;
+    progressSnap.forEach((doc: any) => {
+        const data = doc.data();
+        if (data.moduleStartedAt && data.moduleCompletedAt) {
+            const start = data.moduleStartedAt.toDate().getTime();
+            const end = data.moduleCompletedAt.toDate().getTime();
+            const delta = (end - start) / 1000;
+            if (delta > 0) {
+                totalDeltaSeconds += delta;
+                completedCount++;
+            }
+        }
+    });
+    const averageDeltaSeconds = completedCount > 0 ? totalDeltaSeconds / completedCount : 0;
+
+    // 6. Friction Node (Metric 6)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const abandonmentSnap = await db.collection('module_progress')
+        .where('status', '==', 'in_progress')
+        .where('lastActiveAt', '<', admin.firestore.Timestamp.fromDate(sevenDaysAgo))
+        .get();
+
+    const abandonmentFrequency: Record<string, number> = {};
+    abandonmentSnap.forEach((doc: any) => {
+        const data = doc.data();
+        const node = data.chapterId || data.topic || 'Unknown Module';
+        abandonmentFrequency[node] = (abandonmentFrequency[node] || 0) + 1;
+    });
+
+    let mostAbandonedNode = 'None';
+    let abandonedCount = 0;
+    for (const [node, count] of Object.entries(abandonmentFrequency)) {
+        if (count > abandonedCount) {
+            mostAbandonedNode = node;
+            abandonedCount = count;
+        }
+    }
+
+    // 7. Mentor AI Reliance (Metric 7)
+    const usersSnap = await db.collection('users').get();
+    const cohorts: Set<string> = new Set();
+    usersSnap.forEach((doc: any) => {
+        const data = doc.data();
+        if (data.cohort) {
+            cohorts.add(data.cohort);
+        }
+    });
+    if (cohorts.size === 0) {
+        cohorts.add('Default Cohort');
+    }
+
+    const mentorAiReliance: Record<string, number> = {};
+    for (const cohort of cohorts) {
+        const cohortSnap = await db.collection('users')
+            .where('cohort', '==', cohort)
+            .aggregate({
+                totalChats: admin.firestore.AggregateField.sum('chatMessagesSent'),
+                totalCompleted: admin.firestore.AggregateField.sum('modulesCompleted'),
+            }).get();
+        
+        const chats = cohortSnap.data().totalChats || 0;
+        const completed = cohortSnap.data().totalCompleted || 0;
+        mentorAiReliance[cohort] = completed > 0 ? chats / completed : 0;
+    }
+
+    // 8. League Distribution (Metric 8)
+    const bronzeCountSnap = await db.collection('users').where('league', '==', 'bronze').count().get();
+    const silverCountSnap = await db.collection('users').where('league', '==', 'silver').count().get();
+    const goldCountSnap = await db.collection('users').where('league', '==', 'gold').count().get();
+
+    const bronze = bronzeCountSnap.data().count || 0;
+    const silver = silverCountSnap.data().count || 0;
+    const gold = goldCountSnap.data().count || 0;
+
+    // 9. Weekly XP Burn Rate (Metric 9)
+    const sevenDaysAgoXp = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const xpLogsSnap = await db.collection('xp_transactions')
+        .where('timestamp', '>=', admin.firestore.Timestamp.fromDate(sevenDaysAgoXp))
+        .get();
+
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const burnMap: Record<string, number> = {
+        'Sun': 0, 'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 0
+    };
+    xpLogsSnap.forEach((doc: any) => {
+        const data = doc.data();
+        const timestamp = data.timestamp?.toDate();
+        if (timestamp) {
+            const dayName = daysOfWeek[timestamp.getDay()];
+            burnMap[dayName] = (burnMap[dayName] || 0) + (data.amount || 0);
+        }
+    });
+
+    const weeklyXpBurnRate: Array<{ day: string; xp: number }> = [];
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+        const dayName = daysOfWeek[date.getDay()];
+        weeklyXpBurnRate.push({
+            day: dayName,
+            xp: burnMap[dayName] || 0
+        });
+    }
+
+    // 10. Broken Link SLA (Metric 10)
+    const totalResourcesSnap = await db.collection('resources').count().get();
+    const reportedDeadLinksSnap = await db.collection('dead_links').count().get();
+
+    const totalResources = totalResourcesSnap.data().count || 0;
+    const reportedDeadLinks = reportedDeadLinksSnap.data().count || 0;
+    const slaPercentage = totalResources > 0 
+        ? Math.max(0, ((totalResources - reportedDeadLinks) / totalResources) * 100)
+        : 100;
+
+    // Compile and write atomically to analytics_reports/latest
+    const reportPayload = {
+        savingsTracker: {
+            webGpuPercent,
+            groqPercent,
+            webGpuCount,
+            groqCount,
+        },
+        costPerLearner: {
+            totalActiveUsers,
+            estimatedCostPerLearner,
+            totalOperations,
+        },
+        securityIntercepts: {
+            totalBlocked,
+            emails,
+            tokens,
+            networking,
+            credentials,
+        },
+        curriculumHeatmap,
+        skillVelocity: {
+            averageDeltaSeconds,
+            totalCompletedModules: completedCount,
+        },
+        frictionNode: {
+            mostAbandonedNode,
+            abandonedCount,
+        },
+        mentorAiReliance,
+        leagueDistribution: {
+            bronze,
+            silver,
+            gold,
+        },
+        weeklyXpBurnRate,
+        brokenLinkSla: {
+            totalResources,
+            reportedDeadLinks,
+            slaPercentage,
+        },
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    await db.collection('analytics_reports').doc('latest').set(reportPayload);
+}
