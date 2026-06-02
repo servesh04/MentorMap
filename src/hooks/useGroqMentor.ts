@@ -12,6 +12,7 @@ import {
     deleteChatHistory,
     type LocalChatMessage
 } from '../services/dbService';
+import { PIIMasker } from '../utils/piiMasker';
 
 export interface ChatMessage {
     role: 'user' | 'assistant';
@@ -33,6 +34,10 @@ interface UseGroqMentorReturn {
 
 export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseGroqMentorReturn => {
     const { offlineSettings, setOfflineSettings } = useStore();
+    const maskerRef = useRef<PIIMasker | null>(null);
+    if (!maskerRef.current) {
+        maskerRef.current = new PIIMasker();
+    }
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -157,10 +162,11 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
             throw new Error('VITE_GROQ_API_KEY is missing from .env');
         }
 
+        // Scrub user and chat history messages before sending to Groq Cloud API
         const apiMessages = [
             { role: 'system', content: systemMessage.content },
-            ...messages.map(m => ({ role: m.role, content: m.content })),
-            { role: 'user', content: queryText },
+            ...messages.map(m => ({ role: m.role, content: maskerRef.current!.maskPrompt(m.content) })),
+            { role: 'user', content: maskerRef.current!.maskPrompt(queryText) },
         ];
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -184,12 +190,13 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
             throw new Error(data.error?.message || `Groq API error: ${response.status}`);
         }
 
-        const assistantContent = data.choices?.[0]?.message?.content;
-        if (!assistantContent) {
+        const assistantContentRaw = data.choices?.[0]?.message?.content;
+        if (!assistantContentRaw) {
             throw new Error('No response received from Groq.');
         }
 
-        return assistantContent;
+        // Unmask the cloud's response (re-inject sensitive info locally)
+        return maskerRef.current!.unmaskResponse(assistantContentRaw);
     };
 
     const sendMessage = useCallback(async (userQuery: string) => {
@@ -259,10 +266,11 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
         }
     }, [messages, isTyping, systemMessage, offlineSettings.offlineModeEnabled, isLocalRunning]);
 
-    const clearChat = useCallback(() => {
+        const clearChat = useCallback(() => {
         setMessages([]);
         setError(null);
         deleteChatHistory(nodeTitle); // Clear conversation history logs asynchronously from IndexedDB
+        maskerRef.current?.clear(); // Clear volatile PII key-value registry and compliance metrics
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
