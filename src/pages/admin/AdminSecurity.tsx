@@ -37,7 +37,7 @@ const AdminSecurity: React.FC = () => {
                     id: "log_001",
                     userId: "usr_google_381023",
                     timestamp: new Date(Date.now() - 5 * 60000), // 5 min ago
-                    originalSnippet: "Deploying code where VITE_GOOGLE_API_KEY=AIzaSyCCAcA9jWFXQ-r9I1ryxMAOwebS3iUEcgw",
+                    originalSnippet: "Deploying code where VITE_GOOGLE_API_KEY=AIzaSyDummyKeyPlaceholderForSecurityAuditOnly",
                     maskedSnippet: "Deploying code where VITE_GOOGLE_API_KEY=[TOKEN_1]",
                     riskCategory: "TOKEN",
                     blockedCount: 1,

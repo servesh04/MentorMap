@@ -183,8 +183,10 @@ export const unloadModel = async (): Promise<void> => {
     if (engine) {
         try {
             await engine.unload();
-        } catch (e) {
-            console.error("Failed to unload model:", e);
+        } catch (e: any) {
+            // Ignore binding/tokenizer errors since the WebWorker is terminated immediately below,
+            // which automatically reclaims all WebAssembly heap memory and WebGPU GPU device buffers.
+            console.warn("[INFO] Ignored WebLLM engine unload exception during worker shutdown:", e.message || e);
         }
         engine = null;
     }

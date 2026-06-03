@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, Youtube, BookOpen, CheckCircle, Circle, Sparkles } from 'lucide-react';
+import { X, Youtube, BookOpen, CheckCircle, Circle, Sparkles, Code2 } from 'lucide-react';
 import { useYouTubeSearch } from '../../hooks/useYouTubeSearch';
+import { useIsDesktop } from '../../hooks/useIsDesktop';
+import { InteractiveSandbox } from './InteractiveSandbox';
 import ResourceList from './ResourceList';
 import QuizModal from './QuizModal';
 import MentorChatWidget from './MentorChatWidget';
@@ -36,10 +38,15 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
     const [isChatExpanded, setIsChatExpanded] = useState(false);
     const [chatInitialQuery, setChatInitialQuery] = useState('');
 
+    // Coding Sandbox states
+    const isDesktop = useIsDesktop();
+    const [showSandbox, setShowSandbox] = useState(false);
+
     // Collapse chat on module change
     React.useEffect(() => {
         setIsChatExpanded(false);
         setChatInitialQuery('');
+        setShowSandbox(false);
     }, [module?.id]);
 
     const handleSparkClick = (type: 'explain' | 'summarize_video' | 'confused') => {
@@ -126,17 +133,28 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
                 <div className="p-6 overflow-y-auto h-[calc(100vh-88px)] space-y-8 bg-background/50">
 
                     {module?.description && (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             <div className="bg-primary/5 p-4 rounded-xl text-foreground text-sm leading-relaxed border border-primary/10">
                                 {module.description}
                             </div>
-                            <button
-                                onClick={() => handleSparkClick('explain')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all hover:scale-[1.02] cursor-pointer"
-                            >
-                                <Sparkles className="w-3.5 h-3.5" />
-                                Explain this module
-                            </button>
+                            <div className="flex flex-wrap gap-2.5 items-center">
+                                <button
+                                    onClick={() => handleSparkClick('explain')}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all hover:scale-[1.02] cursor-pointer"
+                                >
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    Explain this module
+                                </button>
+                                {isDesktop && (
+                                    <button
+                                        onClick={() => setShowSandbox(true)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 transition-all hover:scale-[1.02] cursor-pointer"
+                                    >
+                                        <Code2 className="w-3.5 h-3.5 animate-pulse" />
+                                        Launch Coding Lab
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -247,6 +265,15 @@ const StepDetailDrawer: React.FC<StepDetailDrawerProps> = ({ isOpen, onClose, mo
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* Coding Sandbox Canvas (desktop-only viewport mount) */}
+            {showSandbox && isDesktop && module && (
+                <InteractiveSandbox
+                    isOpen={showSandbox}
+                    onClose={() => setShowSandbox(false)}
+                    nodeTitle={module.title}
+                />
             )}
         </>
     );

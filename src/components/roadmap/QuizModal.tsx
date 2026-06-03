@@ -27,10 +27,10 @@ const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, nodeId, topicNam
 
     // Fetch quiz when modal opens
     useEffect(() => {
-        if (isOpen && questions.length === 0) {
+        if (isOpen) {
             fetchQuiz();
         }
-    }, [isOpen, fetchQuiz, questions.length]);
+    }, [isOpen, fetchQuiz]);
 
     // Reset state when modal opens with new content
     useEffect(() => {
@@ -90,7 +90,8 @@ const QuizModal: React.FC<QuizModalProps> = ({ isOpen, onClose, nodeId, topicNam
         setAnswers([]);
         setShowResults(false);
         setIsAnswerLocked(false);
-    }, []);
+        fetchQuiz(); // Reshuffle a new set of 5 random questions from the in-memory pool
+    }, [fetchQuiz]);
 
     const handleMarkComplete = useCallback(() => {
         onMarkComplete();

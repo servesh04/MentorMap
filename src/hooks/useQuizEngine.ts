@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -13,7 +13,7 @@ interface UseQuizEngineReturn {
     questions: QuizQuestionData[];
     loading: boolean;
     error: string | null;
-    fetchQuiz: () => Promise<void>;
+    fetchQuiz: (forceRefresh?: boolean) => Promise<void>;
 }
 
 const FALLBACK_QUESTIONS: QuizQuestionData[] = [
@@ -25,79 +25,111 @@ const FALLBACK_QUESTIONS: QuizQuestionData[] = [
     },
 ];
 
+// Helper to select a random subset of size n
+const getRandomSubset = (arr: QuizQuestionData[], n: number): QuizQuestionData[] => {
+    if (arr.length <= n) return [...arr];
+    const shuffled = [...arr].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, n);
+};
+
 export const useQuizEngine = (nodeId: string, topicName: string): UseQuizEngineReturn => {
     const [questions, setQuestions] = useState<QuizQuestionData[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    
+    // In-memory cache for all 30 loaded questions
+    const allQuestionsRef = useRef<QuizQuestionData[]>([]);
 
-    const fetchQuiz = useCallback(async () => {
+    const fetchQuiz = useCallback(async (forceRefresh = false) => {
         if (!nodeId || !topicName) return;
+
+        // If we already have the questions loaded in the in-memory ref, and are not forcing a full refresh
+        if (allQuestionsRef.current.length >= 5 && !forceRefresh) {
+            setQuestions(getRandomSubset(allQuestionsRef.current, 5));
+            return;
+        }
 
         setLoading(true);
         setError(null);
 
         try {
-            // Step 1: Cache Check — look for existing quiz in Firestore
             const quizDocRef = doc(db, 'quizzes', nodeId);
-            const quizSnapshot = await getDoc(quizDocRef);
+            let parsedData: QuizQuestionData[] = [];
+            let needsGeneration = true;
 
-            if (quizSnapshot.exists()) {
-                const cachedData = quizSnapshot.data();
-                if (cachedData?.questions && Array.isArray(cachedData.questions) && cachedData.questions.length > 0) {
-                    setQuestions(cachedData.questions as QuizQuestionData[]);
-                    setLoading(false);
-                    return;
+            if (!forceRefresh) {
+                // Step 1: Cache Check — look for existing quiz in Firestore
+                const quizSnapshot = await getDoc(quizDocRef);
+
+                if (quizSnapshot.exists()) {
+                    const cachedData = quizSnapshot.data();
+                    if (cachedData?.questions && Array.isArray(cachedData.questions) && cachedData.questions.length > 0) {
+                        parsedData = cachedData.questions as QuizQuestionData[];
+                        
+                        // If it has at least 15 questions, we can use it.
+                        // If it has fewer (e.g. legacy 5-question quizzes), we force regenerate to 30.
+                        if (parsedData.length >= 15) {
+                            needsGeneration = false;
+                        } else {
+                            console.log(`Quiz for ${topicName} has only ${parsedData.length} questions. Triggering upgrade to 30 questions.`);
+                        }
+                    }
                 }
             }
 
-            // Step 2: API Generation — call Gemini
-            const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-            if (!API_KEY) {
-                throw new Error('Gemini API Key is missing.');
-            }
-
-            const prompt = `Generate a 5-question multiple-choice quiz about '${topicName}'. Return ONLY raw JSON without markdown formatting. Schema: [ { "question": string, "options": [string, string, string, string], "correctAnswerIndex": number, "explanation": string } ]`;
-
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                    }),
+            if (needsGeneration) {
+                // Step 2: API Generation — call Gemini for 30 questions
+                const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+                if (!API_KEY) {
+                    throw new Error('Gemini API Key is missing.');
                 }
-            );
 
-            const data = await response.json();
+                const prompt = `Generate 30 diverse multiple-choice quiz questions about '${topicName}'. Return ONLY raw JSON without markdown formatting. Schema: [ { "question": string, "options": [string, string, string, string], "correctAnswerIndex": number, "explanation": string } ]`;
 
-            if (data.error) {
-                console.error('Gemini API Error:', data.error);
-                throw new Error(data.error.message || 'Gemini API error');
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                        }),
+                    }
+                );
+
+                const data = await response.json();
+
+                if (data.error) {
+                    console.error('Gemini API Error:', data.error);
+                    throw new Error(data.error.message || 'Gemini API error');
+                }
+
+                const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!rawText) {
+                    throw new Error('No content generated by Gemini.');
+                }
+
+                // Clean markdown fences if present
+                const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+                parsedData = JSON.parse(cleanedText);
+
+                if (!Array.isArray(parsedData) || parsedData.length === 0) {
+                    throw new Error('Invalid quiz data structure from Gemini.');
+                }
+
+                // Step 3: Cache Save — persist to Firestore
+                await setDoc(quizDocRef, { questions: parsedData });
             }
 
-            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!rawText) {
-                throw new Error('No content generated by Gemini.');
-            }
-
-            // Clean markdown fences if present
-            const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsedData: QuizQuestionData[] = JSON.parse(cleanedText);
-
-            if (!Array.isArray(parsedData) || parsedData.length === 0) {
-                throw new Error('Invalid quiz data structure from Gemini.');
-            }
-
-            // Step 3: Cache Save — persist to Firestore
-            await setDoc(quizDocRef, { questions: parsedData });
-
-            setQuestions(parsedData);
+            // Load into in-memory cache and select a random subset of 5 questions
+            allQuestionsRef.current = parsedData;
+            setQuestions(getRandomSubset(parsedData, 5));
         } catch (err: any) {
             console.error('Quiz Engine Error:', err);
             setError(err.message || 'Failed to generate quiz.');
 
             // Fallback so user is never blocked
+            allQuestionsRef.current = FALLBACK_QUESTIONS;
             setQuestions(FALLBACK_QUESTIONS);
         } finally {
             setLoading(false);

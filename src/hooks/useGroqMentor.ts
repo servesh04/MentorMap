@@ -33,7 +33,19 @@ interface UseGroqMentorReturn {
 }
 
 export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseGroqMentorReturn => {
-    const { offlineSettings, setOfflineSettings } = useStore();
+    const {
+        offlineSettings,
+        setOfflineSettings,
+        isLocalRunning,
+        isDownloading,
+        downloadProgress,
+        downloadStatus,
+        setIsLocalRunning,
+        setIsDownloading,
+        setDownloadProgress,
+        setDownloadStatus
+    } = useStore();
+
     const maskerRef = useRef<PIIMasker | null>(null);
     if (!maskerRef.current) {
         maskerRef.current = new PIIMasker();
@@ -43,11 +55,6 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
     const [error, setError] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    // Local model states
-    const [downloadProgress, setDownloadProgress] = useState(0);
-    const [isDownloading, setIsDownloading] = useState(false);
-    const [downloadStatus, setDownloadStatus] = useState('');
-    const [isLocalRunning, setIsLocalRunning] = useState(false);
     const [tabVisible, setTabVisible] = useState(true);
 
     const systemMessage = {
@@ -94,7 +101,7 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
         return () => {
             document.removeEventListener("visibilitychange", handleVisibilityChange);
         };
-    }, [isTyping]);
+    }, [isTyping, setIsLocalRunning]);
 
     // 4. Local Model Pre-loader Hook: Re-evaluates on visibility state change
     useEffect(() => {
@@ -144,7 +151,7 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
         return () => {
             isMounted = false;
         };
-    }, [offlineSettings.offlineModeEnabled, tabVisible]);
+    }, [offlineSettings.offlineModeEnabled, tabVisible, isDownloading, setIsDownloading, setDownloadStatus, setDownloadProgress, setIsLocalRunning, setOfflineSettings]);
 
     // Unload local model if user disables offline mode to free VRAM
     useEffect(() => {
@@ -154,7 +161,7 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
             setDownloadProgress(0);
             unloadModel();
         }
-    }, [offlineSettings.offlineModeEnabled]);
+    }, [offlineSettings.offlineModeEnabled, setIsLocalRunning, setDownloadStatus, setDownloadProgress]);
 
     const runCloudQuery = async (queryText: string, controller: AbortController) => {
         const API_KEY = import.meta.env.VITE_GROQ_API_KEY;
@@ -212,7 +219,6 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
         }
         const controller = new AbortController();
         abortControllerRef.current = controller;
-
         const isLocalMode = offlineSettings.offlineModeEnabled && (isLocalRunning || isModelLoaded());
 
         if (isLocalMode) {
@@ -223,9 +229,28 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
                     { role: 'user' as const, content: userQuery.trim() },
                 ];
 
-                const assistantContent = await generateLocalResponse(apiMessages);
-                const assistantMessage: ChatMessage = { role: 'assistant', content: assistantContent };
-                setMessages(prev => [...prev, assistantMessage]);
+                // Pre-append an empty assistant message to stream tokens into
+                setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+                try {
+                    await generateLocalResponse(apiMessages, (chunk) => {
+                        setMessages(prev => {
+                            const updated = [...prev];
+                            const lastIdx = updated.length - 1;
+                            if (lastIdx >= 0 && updated[lastIdx].role === 'assistant') {
+                                updated[lastIdx] = {
+                                    ...updated[lastIdx],
+                                    content: updated[lastIdx].content + chunk
+                                };
+                            }
+                            return updated;
+                        });
+                    });
+                } catch (localErr) {
+                    // Remove the placeholder message on failure so the fallback is clean
+                    setMessages(prev => prev.slice(0, -1));
+                    throw localErr;
+                }
             } catch (err: any) {
                 console.warn("Local generation failed, falling back to Cloud API:", err);
                 setError("Local execution failed. Switched to Cloud API.");

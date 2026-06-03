@@ -96,6 +96,17 @@ interface AppState {
     // Offline AI Settings
     offlineSettings: OfflineSettings;
     setOfflineSettings: (settings: Partial<OfflineSettings>) => void;
+
+    // Global Local AI Engine States to prevent race conditions
+    isLocalRunning: boolean;
+    isDownloading: boolean;
+    downloadProgress: number;
+    downloadStatus: string;
+    
+    setIsLocalRunning: (running: boolean) => void;
+    setIsDownloading: (downloading: boolean) => void;
+    setDownloadProgress: (progress: number) => void;
+    setDownloadStatus: (status: string) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -168,6 +179,15 @@ export const useStore = create<AppState>((set, get) => ({
         }
         return { offlineSettings: newSettings };
     }),
+
+    isLocalRunning: false,
+    isDownloading: false,
+    downloadProgress: 0,
+    downloadStatus: '',
+    setIsLocalRunning: (isLocalRunning) => set({ isLocalRunning }),
+    setIsDownloading: (isDownloading) => set({ isDownloading }),
+    setDownloadProgress: (downloadProgress) => set({ downloadProgress }),
+    setDownloadStatus: (downloadStatus) => set({ downloadStatus }),
 
     toggleModuleCompletion: (courseId, moduleId) => set((state) => {
         const currentCourseModules = state.completedModules[courseId] || [];
