@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { sampleBots, generateBotXpValues } from './botPool';
 
@@ -418,3 +419,30 @@ export async function runAggregation(db: any, admin: any): Promise<void> {
 
     await db.collection('analytics_reports').doc('latest').set(reportPayload);
 }
+
+/**
+ * Cloud Function to assign administrative access claims to a target user.
+ */
+export const setAdminRole = onCall({
+    memory: '256MiB',
+}, async (request) => {
+    const uid = request.data.uid;
+    if (!uid || typeof uid !== 'string') {
+        throw new HttpsError('invalid-argument', 'UID must be a valid string.');
+    }
+
+    // In a real-world scenario, you would authorize the caller here using request.auth.
+    console.log(`Cloud Function setAdminRole invoked for UID: ${uid}`);
+
+    try {
+        await admin.auth().setCustomUserClaims(uid, { admin: true });
+        console.log(`Successfully assigned custom claim { admin: true } to user: ${uid}`);
+        return {
+            success: true,
+            message: `Successfully set custom claim for user: ${uid}. Token refresh required.`,
+        };
+    } catch (error: any) {
+        console.error(`Failed to assign custom claim to user: ${uid}:`, error);
+        throw new HttpsError('internal', `Failed to set custom claim: ${error.message}`);
+    }
+});

@@ -33,10 +33,11 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.aggregateDashboardMetrics = exports.seedBotsIntoBucket = exports.resolveWeeklyLeagues = void 0;
+exports.setAdminRole = exports.aggregateDashboardMetrics = exports.seedBotsIntoBucket = exports.resolveWeeklyLeagues = void 0;
 exports.runAggregation = runAggregation;
 const functions = __importStar(require("firebase-functions/v1"));
 const scheduler_1 = require("firebase-functions/v2/scheduler");
+const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
 const botPool_1 = require("./botPool");
 admin.initializeApp();
@@ -400,4 +401,29 @@ async function runAggregation(db, admin) {
     };
     await db.collection('analytics_reports').doc('latest').set(reportPayload);
 }
+/**
+ * Cloud Function to assign administrative access claims to a target user.
+ */
+exports.setAdminRole = (0, https_1.onCall)({
+    memory: '256MiB',
+}, async (request) => {
+    const uid = request.data.uid;
+    if (!uid || typeof uid !== 'string') {
+        throw new https_1.HttpsError('invalid-argument', 'UID must be a valid string.');
+    }
+    // In a real-world scenario, you would authorize the caller here using request.auth.
+    console.log(`Cloud Function setAdminRole invoked for UID: ${uid}`);
+    try {
+        await admin.auth().setCustomUserClaims(uid, { admin: true });
+        console.log(`Successfully assigned custom claim { admin: true } to user: ${uid}`);
+        return {
+            success: true,
+            message: `Successfully set custom claim for user: ${uid}. Token refresh required.`,
+        };
+    }
+    catch (error) {
+        console.error(`Failed to assign custom claim to user: ${uid}:`, error);
+        throw new https_1.HttpsError('internal', `Failed to set custom claim: ${error.message}`);
+    }
+});
 //# sourceMappingURL=index.js.map

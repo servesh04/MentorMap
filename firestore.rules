@@ -9,10 +9,10 @@ service cloud.firestore {
 
     // 1. PRIVATE USER DATA (XP, Streaks, Progress)
     match /users/{userId} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || request.auth.token.admin == true);
       
       match /{document=**} {
-        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+        allow read, write: if isAuthenticated() && (request.auth.uid == userId || request.auth.token.admin == true);
       }
     }
 
@@ -44,6 +44,18 @@ service cloud.firestore {
     // 6. LEADERBOARDS COLLECTION (Matchmaking & Ranks)
     match /leaderboards/{bucketId} {
       allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // 7. ANALYTICS REPORTS COLLECTION (Manager Dashboard)
+    match /analytics_reports/{reportId} {
+      allow read: if isAuthenticated() && request.auth.token.admin == true;
+      allow write: if false; // Cloud Functions/backend script runs with administrative privileges bypassing rules
+    }
+
+    // 8. TELEMETRY LOGS COLLECTION (Security Audits)
+    match /telemetry_logs/{logId} {
+      allow read: if isAuthenticated() && request.auth.token.admin == true;
       allow write: if isAuthenticated();
     }
   }

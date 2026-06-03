@@ -44,11 +44,11 @@ interface AppState {
 
     // Auth State Properties
     currentUser: FirebaseUser | null;
-    userRole: 'beginner' | 'advanced' | 'lecturer' | null;
+    userRole: 'beginner' | 'advanced' | 'lecturer' | 'admin' | null;
     authLoading: boolean;
 
     setCurrentUser: (user: FirebaseUser | null) => void;
-    setUserRole: (role: 'beginner' | 'advanced' | 'lecturer' | null) => void;
+    setUserRole: (role: 'beginner' | 'advanced' | 'lecturer' | 'admin' | null) => void;
     setAuthLoading: (loading: boolean) => void;
 
     // Progress State

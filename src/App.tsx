@@ -9,6 +9,13 @@ import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Landing from './pages/Landing';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
+import AdminRoute from './components/Auth/AdminRoute';
+import AdminLayout from './components/AdminLayout';
+import Unauthorized from './pages/Unauthorized';
+import AdminOverview from './pages/admin/AdminOverview';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminSecurity from './pages/admin/AdminSecurity';
+import AdminConfig from './pages/admin/AdminConfig';
 import SplashScreen from './components/SplashScreen';
 import WeeklyResultModal from './components/WeeklyResultModal';
 
@@ -28,6 +35,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Landing />} />
+          <Route path="/403" element={<Unauthorized />} />
 
           <Route element={
             <ProtectedRoute>
@@ -45,6 +53,20 @@ const App: React.FC = () => {
               <CourseDetail />
             </ProtectedRoute>
           } />
+
+          {/* Admin Routes protected by claims validation guard */}
+          <Route element={
+            <ProtectedRoute>
+              <AdminRoute />
+            </ProtectedRoute>
+          }>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin/dashboard" element={<AdminOverview />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/security" element={<AdminSecurity />} />
+              <Route path="/admin/config" element={<AdminConfig />} />
+            </Route>
+          </Route>
         </Routes>
       </Router>
     </>

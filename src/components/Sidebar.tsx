@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Compass, Trophy, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, Compass, Trophy, User, LogOut, ShieldCheck } from 'lucide-react';
 import clsx from 'clsx';
 import Logo from './Logo';
 import { ThemeToggle } from './ThemeToggle';
@@ -10,7 +10,7 @@ import { useCourses } from '../hooks/useCourses';
 import { getUserDynamicRank } from '../utils/leveling';
 
 const Sidebar: React.FC = () => {
-    const { currentUser, xp, activeCourses } = useStore();
+    const { currentUser, xp, activeCourses, userRole } = useStore();
     const { logout } = useAuth();
     const { courses } = useCourses();
 
@@ -29,6 +29,10 @@ const Sidebar: React.FC = () => {
         { to: '/league', icon: Trophy, label: 'League' },
         { to: '/profile', icon: User, label: 'Profile' },
     ];
+
+    if (userRole === 'admin') {
+        navItems.push({ to: '/admin/dashboard', icon: ShieldCheck, label: 'Admin Console' });
+    }
 
     return (
         <aside className="hidden md:flex flex-col w-64 h-full border-r border-border bg-background p-4">

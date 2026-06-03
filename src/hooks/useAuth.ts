@@ -14,12 +14,19 @@ export const useAuthListener = () => {
             setAuthLoading(true);
             if (user) {
                 setCurrentUser(user);
-                // Check for user role and active courses in Firestore
+                // Check for user role and active courses in Firestore, verifying custom claims first
                 try {
+                    const tokenResult = await user.getIdTokenResult(true);
+                    const isAdmin = !!tokenResult.claims.admin;
+
                     const userDoc = await getDoc(doc(db, 'users', user.uid));
                     if (userDoc.exists()) {
                         const data = userDoc.data();
-                        setUserRole(data.role);
+                        if (isAdmin) {
+                            setUserRole('admin');
+                        } else {
+                            setUserRole(data.role);
+                        }
                         setActiveCourses(data.active_courses || []);
                         if (data.notificationPrefs) {
                             setNotificationPrefs(data.notificationPrefs);
@@ -60,7 +67,11 @@ export const useAuthListener = () => {
                         // Calculate streak for today
                         calculateDailyStreak(user.uid, streak, lastActiveDate);
                     } else {
-                        setUserRole('beginner'); // Default role for new users
+                        if (isAdmin) {
+                            setUserRole('admin');
+                        } else {
+                            setUserRole('beginner'); // Default role for new users
+                        }
                         setActiveCourses([]);
                     }
                 } catch (error) {
