@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     Settings, 
     Save, 
@@ -7,6 +7,8 @@ import {
     Check,
     Cpu
 } from 'lucide-react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 const AdminConfig: React.FC = () => {
     const [xpMultiplier, setXpMultiplier] = useState(1);
@@ -16,14 +18,45 @@ const AdminConfig: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
-    const handleSave = () => {
+    useEffect(() => {
+        const loadConfig = async () => {
+            try {
+                const docRef = doc(db, 'system', 'config');
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.xpMultiplier !== undefined) setXpMultiplier(data.xpMultiplier);
+                    if (data.localModelName !== undefined) setLocalModelName(data.localModelName);
+                    if (data.maxOutputTokens !== undefined) setMaxOutputTokens(data.maxOutputTokens);
+                    if (data.enableCloudFallback !== undefined) setEnableCloudFallback(data.enableCloudFallback);
+                }
+            } catch (error) {
+                console.error("Failed to load system config:", error);
+            }
+        };
+        loadConfig();
+    }, []);
+
+    const handleSave = async () => {
         setIsSaving(true);
         setSaved(false);
-        setTimeout(() => {
-            setIsSaving(false);
+        try {
+            const docRef = doc(db, 'system', 'config');
+            await setDoc(docRef, {
+                xpMultiplier,
+                localModelName,
+                maxOutputTokens,
+                enableCloudFallback,
+                updatedAt: new Date().toISOString()
+            });
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
-        }, 1200);
+        } catch (error) {
+            console.error("Failed to save system config:", error);
+            alert("Failed to save configuration: " + (error as Error).message);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
