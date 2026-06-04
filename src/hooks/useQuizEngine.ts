@@ -126,7 +126,7 @@ export const useQuizEngine = (nodeId: string, topicName: string): UseQuizEngineR
             setQuestions(getRandomSubset(parsedData, 5));
         } catch (err: any) {
             console.error('Quiz Engine Error:', err);
-            setError(err.message || 'Failed to generate quiz.');
+            setError('Gemini AI is currently unavailable. Using local fallback quiz.');
 
             // Fallback so user is never blocked
             allQuestionsRef.current = FALLBACK_QUESTIONS;

@@ -56,7 +56,8 @@ const BountyModal: React.FC<BountyModalProps> = ({ isOpen, onClose, userId, modu
                 const quiz = await generateBountyQuiz(moduleTopic);
                 setQuestions(quiz);
             } catch (err: any) {
-                setError(err.message || 'Failed to generate bounty quiz.');
+                console.error("Failed to generate bounty quiz:", err);
+                setError('Gemini AI is currently unavailable. Please try again later.');
             } finally {
                 setLoading(false);
             }
@@ -94,7 +95,8 @@ const BountyModal: React.FC<BountyModalProps> = ({ isOpen, onClose, userId, modu
             setQuestions(quiz);
             // Replace with custom toast if available, but standard alert suffices per plan for immediate notification
         } catch (err: any) {
-            setError(err.message || 'Failed to reroll bounty.');
+            console.error("Failed to reroll bounty:", err);
+            setError('Gemini AI is currently unavailable. Please try again later.');
             // Revert optimistic update
             useStore.setState((s) => ({
                 ...s,

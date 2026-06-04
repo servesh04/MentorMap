@@ -5,8 +5,14 @@ import { useCourseSearch } from '../hooks/useCourseSearch';
 
 const Explore: React.FC = () => {
     const navigate = useNavigate();
-    const [searchTerm, setSearchTerm] = useState('');
-    const { courses: filteredCourses, loading, error } = useCourseSearch(searchTerm);
+    const [inputValue, setInputValue] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const { courses: filteredCourses, loading, error } = useCourseSearch(searchQuery);
+
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setSearchQuery(inputValue);
+    };
 
     if (loading) {
         return (
@@ -30,16 +36,16 @@ const Explore: React.FC = () => {
                 </header>
 
                 {/* Chunky Search Input */}
-                <div className="relative mb-1">
+                <form onSubmit={handleSearchSubmit} className="relative mb-1">
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                     <input
                         type="text"
                         placeholder="Search courses..."
                         className="w-full h-12 bg-slate-50 dark:bg-card rounded-full border border-slate-200 dark:border-transparent text-slate-900 dark:text-foreground pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary focus:border-emerald-500 transition-all placeholder:text-slate-400"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
                     />
-                </div>
+                </form>
             </div>
 
             <div className="space-y-3 mt-4">
@@ -80,16 +86,16 @@ const Explore: React.FC = () => {
 
             {filteredCourses.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
-                    <p className="mb-4">No courses found matching "{searchTerm}"</p>
-                    {searchTerm && (
+                    <p className="mb-4">No courses found matching "{searchQuery}"</p>
+                    {searchQuery && (
                         <div className="max-w-md mx-auto bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-6 rounded-2xl shadow-lg">
                             <Sparkles className="w-8 h-8 mx-auto mb-3 text-yellow-300" />
-                            <h3 className="font-bold text-lg mb-2">Want to learn {searchTerm}?</h3>
+                            <h3 className="font-bold text-lg mb-2">Want to learn {searchQuery}?</h3>
                             <p className="text-indigo-100 text-sm mb-4">
                                 Our AI can build a custom curriculum for you in seconds.
                             </p>
                             <button
-                                onClick={() => navigate(`/course/dynamic-${searchTerm.toLowerCase().replace(/\s+/g, '-')}`)}
+                                onClick={() => navigate(`/course/dynamic-${searchQuery.toLowerCase().replace(/\s+/g, '-')}`)}
                                 className="bg-white text-indigo-600 px-6 py-2 rounded-full font-bold hover:bg-indigo-50 active:scale-95 transition-all duration-200 shadow-sm"
                             >
                                 Generate Roadmap

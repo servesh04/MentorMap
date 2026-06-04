@@ -35,7 +35,7 @@ export const useGeminiRoadmap = (topic: string, isGenerated: boolean): RoadmapRe
 
             if (!API_KEY) {
                 console.error("Missing VITE_GEMINI_API_KEY");
-                setError("Gemini API Key is missing.");
+                setError("Gemini AI is currently unavailable. Using fallback roadmap.");
                 setLoading(false);
                 return;
             }
@@ -130,7 +130,7 @@ For 'searchHints.articleQuery': Think about which website has the definitive art
 
             } catch (err: any) {
                 console.error("Gemini Generation Error:", err);
-                setError(err.message || "Failed to generate roadmap.");
+                setError("Gemini AI is currently unavailable. Using fallback roadmap.");
 
                 // Fallback (Optional: You could remove this if you prefer to show the error)
                 setModules([

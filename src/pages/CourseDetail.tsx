@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, PlayCircle, FileText, CheckCircle, LayoutList, Map as MapIcon, Loader } from 'lucide-react';
+import { ArrowLeft, PlayCircle, FileText, CheckCircle, LayoutList, Map as MapIcon, Loader, Sparkles } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -27,6 +27,7 @@ const CourseDetail: React.FC = () => {
 
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
+    const [upgradeAccepted, setUpgradeAccepted] = useState<boolean | null>(null);
 
     useEffect(() => {
         const fetchCourse = async () => {
@@ -60,7 +61,36 @@ const CourseDetail: React.FC = () => {
     }
 
     const courseCompletedModules = (id ? completedModules[id] : []) || [];
+
+    const isDynamicAndFallback = course.id.startsWith('dynamic-') && course.modules.some(m => m.id.startsWith('fallback-'));
+    const hasProgress = courseCompletedModules.length > 0;
+    const shouldAutoUpgrade = isDynamicAndFallback && !hasProgress && !course.skipRegeneration;
+    const triggerUpgrade = shouldAutoUpgrade || upgradeAccepted === true;
+    const showUpgradePrompt = isDynamicAndFallback && hasProgress && !course.skipRegeneration && upgradeAccepted === null;
+    const shouldShowDynamicView = (course.isGenerated && !isDynamicAndFallback) || triggerUpgrade;
+
     const progress = Math.round((courseCompletedModules.length / course.modules.length) * 100);
+
+    const handleUpgradeConfirm = () => {
+        useStore.setState(state => ({
+            completedModules: {
+                ...state.completedModules,
+                [course.id]: []
+            }
+        }));
+        setUpgradeAccepted(true);
+    };
+
+    const handleUpgradeDecline = async () => {
+        const updatedCourse = { ...course, skipRegeneration: true };
+        setCourse(updatedCourse);
+        setUpgradeAccepted(false);
+        try {
+            await courseService.saveCourse(updatedCourse);
+        } catch (error) {
+            console.error("Failed to save skipRegeneration preference:", error);
+        }
+    };
 
     const handleEnroll = async () => {
         if (!currentUser) return;
@@ -152,8 +182,32 @@ const CourseDetail: React.FC = () => {
                     {course.description}
                 </p>
 
-                {course.isGenerated ? (
-                    <DynamicCourseView course={course} />
+                {shouldShowDynamicView ? (
+                    <DynamicCourseView course={{ ...course, isGenerated: true }} />
+                ) : showUpgradePrompt ? (
+                    <div className="max-w-2xl mx-auto my-8 bg-card/60 backdrop-blur-md rounded-2xl border border-primary/20 p-6 md:p-8 text-center shadow-xl animate-in fade-in slide-in-from-bottom duration-500 relative z-10">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 border border-primary/20">
+                            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground mb-2">Upgrade to AI Roadmap</h3>
+                        <p className="text-muted-foreground text-sm max-w-md mx-auto mb-6">
+                            A complete, personalized learning roadmap is now available. Upgrading will replace the 3 fallback modules and reset your progress for this course.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <button
+                                onClick={handleUpgradeConfirm}
+                                className="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all duration-200 cursor-pointer"
+                            >
+                                Yes, Generate AI Roadmap
+                            </button>
+                            <button
+                                onClick={handleUpgradeDecline}
+                                className="px-6 py-3 bg-muted text-muted-foreground font-semibold rounded-xl border border-border hover:border-muted-foreground/30 hover:text-foreground active:scale-95 transition-all duration-200 cursor-pointer"
+                            >
+                                No, Keep Current Progress
+                            </button>
+                        </div>
+                    </div>
                 ) : (
                     <>
                         <div className="flex items-center justify-between mb-6">
