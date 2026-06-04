@@ -7,6 +7,27 @@ export interface Article {
     snippet: string;
 }
 
+const getFallbackArticles = (query: string): Article[] => [
+    {
+        title: "Search GeeksforGeeks",
+        link: `https://www.geeksforgeeks.org/search/?q=${encodeURIComponent(query)}`,
+        displayLink: 'www.geeksforgeeks.org',
+        snippet: `Click to search for '${query}' tutorials, guides, and practice examples on GeeksforGeeks.`
+    },
+    {
+        title: "Search MDN Web Docs",
+        link: `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(query)}`,
+        displayLink: 'developer.mozilla.org',
+        snippet: `Click to search for '${query}' reference articles, docs, and specifications on MDN Web Docs.`
+    },
+    {
+        title: "Search Dev.to",
+        link: `https://dev.to/search?q=${encodeURIComponent(query)}`,
+        displayLink: 'dev.to',
+        snippet: `Click to search for '${query}' community articles, tips, and hands-on developer guides on Dev.to.`
+    }
+];
+
 export const useArticleSearch = (query: string, optimizedQuery?: string) => {
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(false);
@@ -24,30 +45,9 @@ export const useArticleSearch = (query: string, optimizedQuery?: string) => {
 
             // 1. Check for API Keys
             if (!API_KEY || !CX_ID) {
-                // console.warn("Missing Google Search API Keys. Using Mock Data.");
                 // Simulate delay
                 await new Promise(resolve => setTimeout(resolve, 800));
-
-                setArticles([
-                    {
-                        title: `${query} - GeeksforGeeks`,
-                        link: 'https://www.geeksforgeeks.org/',
-                        displayLink: 'www.geeksforgeeks.org',
-                        snippet: `A computer science portal for geeks. It contains well written, well thought and well explained computer science and programming articles on ${query}.`
-                    },
-                    {
-                        title: `${query} - MDN Web Docs`,
-                        link: 'https://developer.mozilla.org/',
-                        displayLink: 'developer.mozilla.org',
-                        snippet: `Resources for developers, by developers. Documenting web technologies, including CSS, HTML, and JavaScript for ${query}.`
-                    },
-                    {
-                        title: `${query} - Wikipedia`,
-                        link: 'https://en.wikipedia.org/wiki/Main_Page',
-                        displayLink: 'en.wikipedia.org',
-                        snippet: `The free encyclopedia that anyone can edit. Find comprehensive information about ${query}.`
-                    }
-                ]);
+                setArticles(getFallbackArticles(query));
                 setLoading(false);
                 return;
             }
@@ -57,6 +57,10 @@ export const useArticleSearch = (query: string, optimizedQuery?: string) => {
                 const url = `https://www.googleapis.com/customsearch/v1?key=${API_KEY}&cx=${CX_ID}&q=${encodeURIComponent(optimizedQuery || query)}&num=3`;
                 const response = await fetch(url);
                 const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error.message || "Forbidden");
+                }
 
                 if (data.items) {
                     setArticles(data.items.map((item: any) => ({
@@ -70,7 +74,9 @@ export const useArticleSearch = (query: string, optimizedQuery?: string) => {
                 }
             } catch (err) {
                 console.error("Article search error:", err);
-                setError("Failed to load articles");
+                // Graceful fallback to dynamic search links so the user is never blocked
+                setArticles(getFallbackArticles(query));
+                setError(null);
             } finally {
                 setLoading(false);
             }
