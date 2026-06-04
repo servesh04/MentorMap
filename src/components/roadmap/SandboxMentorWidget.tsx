@@ -3,6 +3,7 @@ import { Sparkles, Send, Trash2, Loader2, X } from 'lucide-react';
 import clsx from 'clsx';
 import { useGroqMentor } from '../../hooks/useGroqMentor';
 import { useStore } from '../../store/useStore';
+import OfflineAIModal from '../OfflineAIModal';
 
 interface SandboxMentorWidgetProps {
     nodeTitle: string;
@@ -97,6 +98,15 @@ export const SandboxMentorWidget: React.FC<SandboxMentorWidgetProps> = ({
     setAttachedContext
 }) => {
     const { offlineSettings, setOfflineSettings } = useStore();
+    const [isOfflineModalOpen, setIsOfflineModalOpen] = useState(false);
+
+    const handleToggleLocalMode = () => {
+        if (!offlineSettings.hasAcceptedDownload) {
+            setIsOfflineModalOpen(true);
+        } else {
+            setOfflineSettings({ offlineModeEnabled: !offlineSettings.offlineModeEnabled });
+        }
+    };
     
     // Isolate conversation history strictly by language to resolve "Language Identity Crisis"
     const {
@@ -202,9 +212,9 @@ export const SandboxMentorWidget: React.FC<SandboxMentorWidgetProps> = ({
 
                 <div className="flex items-center gap-2">
                     {/* Interactive Toggle between Local and Cloud Mode */}
-                    {offlineSettings.hasAcceptedDownload && !isDownloading && (
+                    {!isDownloading && (
                         <button
-                            onClick={() => setOfflineSettings({ offlineModeEnabled: !offlineSettings.offlineModeEnabled })}
+                            onClick={handleToggleLocalMode}
                             className={clsx(
                                 "text-[10px] tracking-wider border px-3 py-1 rounded-full font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5",
                                 offlineSettings.offlineModeEnabled
@@ -371,6 +381,11 @@ export const SandboxMentorWidget: React.FC<SandboxMentorWidgetProps> = ({
                     </button>
                 </form>
             </div>
+
+            <OfflineAIModal
+                isOpen={isOfflineModalOpen}
+                onClose={() => setIsOfflineModalOpen(false)}
+            />
         </div>
     );
 };

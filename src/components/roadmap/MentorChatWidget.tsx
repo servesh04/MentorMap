@@ -3,6 +3,7 @@ import { Sparkles, Send, ChevronDown, Trash2, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import { useGroqMentor } from '../../hooks/useGroqMentor';
 import { useStore } from '../../store/useStore';
+import OfflineAIModal from '../OfflineAIModal';
 
 interface MentorChatWidgetProps {
     nodeTitle: string;
@@ -22,6 +23,15 @@ const MentorChatWidget: React.FC<MentorChatWidgetProps> = ({
     clearInitialQuery
 }) => {
     const { offlineSettings, setOfflineSettings } = useStore();
+    const [isOfflineModalOpen, setIsOfflineModalOpen] = useState(false);
+
+    const handleToggleLocalMode = () => {
+        if (!offlineSettings.hasAcceptedDownload) {
+            setIsOfflineModalOpen(true);
+        } else {
+            setOfflineSettings({ offlineModeEnabled: !offlineSettings.offlineModeEnabled });
+        }
+    };
     const {
         messages,
         isTyping,
@@ -94,9 +104,9 @@ const MentorChatWidget: React.FC<MentorChatWidgetProps> = ({
 
                 <div className="flex items-center gap-2">
                     {/* Interactive Toggle between Local and Cloud Mode */}
-                    {offlineSettings.hasAcceptedDownload && !isDownloading && (
+                    {!isDownloading && (
                         <button
-                            onClick={() => setOfflineSettings({ offlineModeEnabled: !offlineSettings.offlineModeEnabled })}
+                            onClick={handleToggleLocalMode}
                             className={clsx(
                                 "text-[9px] tracking-wider border px-2.5 py-0.5 rounded-full font-bold transition-all cursor-pointer shrink-0",
                                 offlineSettings.offlineModeEnabled
@@ -233,6 +243,11 @@ const MentorChatWidget: React.FC<MentorChatWidgetProps> = ({
                     </button>
                 </form>
             </div>
+
+            <OfflineAIModal
+                isOpen={isOfflineModalOpen}
+                onClose={() => setIsOfflineModalOpen(false)}
+            />
         </div>
     );
 };
