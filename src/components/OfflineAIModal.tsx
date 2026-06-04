@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Cpu, CheckCircle2, AlertTriangle, Trash2, Download, Loader2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { checkWebGPUSupport, loadLocalModel, clearModelCache, isModelCached } from '../services/webllmService';
+import { checkWebGPUSupport, loadLocalModel, clearModelCache, isModelCached, cancelModelLoad } from '../services/webllmService';
 import clsx from 'clsx';
 
 interface OfflineAIModalProps {
@@ -10,7 +10,7 @@ interface OfflineAIModalProps {
 }
 
 const OfflineAIModal: React.FC<OfflineAIModalProps> = ({ isOpen, onClose }) => {
-    const { offlineSettings, setOfflineSettings } = useStore();
+    const { offlineSettings, setOfflineSettings, isUnloading } = useStore();
     const [webGpuSupported, setWebGpuSupported] = useState<boolean | null>(null);
     const [progress, setProgress] = useState(0);
     const [statusText, setStatusText] = useState('');
@@ -32,7 +32,7 @@ const OfflineAIModal: React.FC<OfflineAIModalProps> = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     const handleToggle = () => {
-        if (!webGpuSupported) return;
+        if (!webGpuSupported || isUnloading) return;
 
         if (!offlineSettings.offlineModeEnabled) {
             // Enable offline mode
@@ -46,6 +46,14 @@ const OfflineAIModal: React.FC<OfflineAIModalProps> = ({ isOpen, onClose }) => {
             // Disable offline mode (uses cloud API)
             setOfflineSettings({ offlineModeEnabled: false });
         }
+    };
+
+    const handleCancelDownload = () => {
+        cancelModelLoad();
+        setOfflineSettings({ offlineModeEnabled: false });
+        setIsDownloading(false);
+        setError(null);
+        setStatusText('Download cancelled.');
     };
 
     const handleDownload = async () => {
@@ -63,7 +71,11 @@ const OfflineAIModal: React.FC<OfflineAIModalProps> = ({ isOpen, onClose }) => {
             setStatusText('Model ready');
         } catch (err: any) {
             console.error('Local download failed:', err);
-            setError(err.message || 'Failed to download model weights. Ensure you are online and have sufficient memory.');
+            if (err.message === 'Download cancelled by user.') {
+                setStatusText('Download cancelled.');
+            } else {
+                setError(err.message || 'Failed to download model weights. Ensure you are online and have sufficient memory.');
+            }
         } finally {
             setIsDownloading(false);
         }
@@ -107,7 +119,7 @@ const OfflineAIModal: React.FC<OfflineAIModalProps> = ({ isOpen, onClose }) => {
                     <h2 className="text-lg font-bold text-foreground">Offline AI</h2>
                     <button
                         onClick={onClose}
-                        disabled={isDownloading}
+                        disabled={isDownloading || isUnloading}
                         className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground disabled:opacity-30"
                     >
                         <X size={20} />
@@ -157,7 +169,7 @@ const OfflineAIModal: React.FC<OfflineAIModalProps> = ({ isOpen, onClose }) => {
 
                         <button
                             onClick={handleToggle}
-                            disabled={!webGpuSupported || isDownloading}
+                            disabled={!webGpuSupported || isDownloading || isUnloading}
                             className={clsx(
                                 'relative shrink-0 ml-4 w-11 h-6 rounded-full transition-colors duration-200',
                                 offlineSettings.offlineModeEnabled && webGpuSupported
@@ -183,7 +195,19 @@ const OfflineAIModal: React.FC<OfflineAIModalProps> = ({ isOpen, onClose }) => {
                                 Model Storage (~850 MB)
                             </h4>
 
-                            {isDownloading ? (
+                            {isUnloading ? (
+                                <div className="space-y-2.5">
+                                    <div className="flex items-center justify-between text-xs font-medium">
+                                        <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <Loader2 size={13} className="animate-spin text-amber-500" />
+                                            Releasing graphics memory (freeing VRAM)...
+                                        </span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                        <div className="h-full bg-amber-500 w-full animate-pulse rounded-full" />
+                                    </div>
+                                </div>
+                            ) : isDownloading ? (
                                 <div className="space-y-2.5">
                                     <div className="flex items-center justify-between text-xs font-medium">
                                         <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
@@ -198,6 +222,12 @@ const OfflineAIModal: React.FC<OfflineAIModalProps> = ({ isOpen, onClose }) => {
                                             style={{ width: `${progress}%` }}
                                         />
                                     </div>
+                                    <button
+                                        onClick={handleCancelDownload}
+                                        className="w-full mt-3 h-8 rounded-lg border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                    >
+                                        Cancel Download & Use Cloud
+                                    </button>
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-3">

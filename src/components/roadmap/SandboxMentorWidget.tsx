@@ -118,7 +118,7 @@ export const SandboxMentorWidget: React.FC<SandboxMentorWidgetProps> = ({
         isDownloading,
         downloadStatus,
         isLocalRunning
-    } = useGroqMentor(`${nodeTitle}_${selectedLanguage}`, currentResource);
+    } = useGroqMentor(`${nodeTitle}_${selectedLanguage}`, currentResource, true);
 
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);

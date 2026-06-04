@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, PlayCircle, FileText, CheckCircle, LayoutList, Map as MapIcon, Loader, Sparkles } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import clsx from 'clsx';
 import RoadmapView from '../components/roadmap/RoadmapView';
@@ -105,6 +105,30 @@ const CourseDetail: React.FC = () => {
         } catch (error) {
             console.error("Enrollment failed:", error);
             alert("Failed to enroll. Please try again.");
+        } finally {
+            setEnrolling(false);
+        }
+    };
+
+    const handleUnenroll = async () => {
+        if (!currentUser || !course) return;
+
+        const confirmUnenroll = confirm(
+            `Are you sure you want to un-enroll from "${course.title}"? This will remove it from your active courses.`
+        );
+        if (!confirmUnenroll) return;
+
+        setEnrolling(true);
+        try {
+            await updateDoc(doc(db, 'users', currentUser.uid), {
+                active_courses: arrayRemove(course.id)
+            });
+            // Update local store immediately
+            setActiveCourses(activeCourses.filter(id => id !== course.id));
+            alert("Successfully un-enrolled!");
+        } catch (error) {
+            console.error("Un-enrollment failed:", error);
+            alert("Failed to un-enroll. Please try again.");
         } finally {
             setEnrolling(false);
         }
@@ -287,10 +311,14 @@ const CourseDetail: React.FC = () => {
             {/* Fixed Bottom Enrollment Bar */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border safe-area-bottom z-40">
                 <button
-                    onClick={handleEnroll}
-                    disabled={enrolling || isEnrolled}
-                    className={`w-full py-4 rounded-xl font-bold text-white shadow-lg shadow-primary/20 transition-all active:scale-95 ${isEnrolled ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-primary hover:bg-primary/90'
-                        }`}
+                    onClick={isEnrolled ? handleUnenroll : handleEnroll}
+                    disabled={enrolling}
+                    title={isEnrolled ? "Click to Un-enroll" : "Click to Enroll"}
+                    className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all active:scale-95 ${
+                        isEnrolled 
+                            ? 'bg-emerald-500 hover:bg-rose-600 shadow-emerald-500/20 hover:shadow-rose-500/20' 
+                            : 'bg-primary hover:bg-primary/90 shadow-primary/20'
+                    }`}
                 >
                     {isEnrolled ? (
                         <span className="flex items-center justify-center gap-2">

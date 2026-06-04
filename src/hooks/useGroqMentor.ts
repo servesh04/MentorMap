@@ -32,7 +32,7 @@ interface UseGroqMentorReturn {
     isLocalRunning: boolean;
 }
 
-export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseGroqMentorReturn => {
+export const useGroqMentor = (nodeTitle: string, currentResource?: string, isExpanded: boolean = true): UseGroqMentorReturn => {
     const {
         offlineSettings,
         setOfflineSettings,
@@ -62,12 +62,16 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
         content: `You are a highly skilled, concise technical mentor for the MentorMap app. The user is currently studying the module: '${nodeTitle}'.${currentResource ? ` They are referencing this material: '${currentResource}'.` : ''} Answer their questions directly, assuming they are a beginner. Do not use excessive formatting. Keep it brief.`,
     };
 
+    // Keep track of the node title that the current messages belong to
+    const messagesLoadedForRef = useRef<string>(nodeTitle);
+
     // 1. Database Hook: Load chat history from IndexedDB on mount or module change
     useEffect(() => {
         const loadOfflineChatHistory = async () => {
             try {
                 const history = await getChatHistory(nodeTitle);
                 setMessages(history);
+                messagesLoadedForRef.current = nodeTitle;
             } catch (e) {
                 console.error("Failed to load offline messages:", e);
             }
@@ -77,7 +81,7 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
 
     // 2. Database Hook: Auto-persist messages to IndexedDB whenever the chat history updates
     useEffect(() => {
-        if (messages.length > 0) {
+        if (messages.length > 0 && messagesLoadedForRef.current === nodeTitle) {
             saveChatHistory(nodeTitle, messages as LocalChatMessage[]);
         }
     }, [messages, nodeTitle]);
@@ -103,21 +107,22 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
         };
     }, [isTyping, setIsLocalRunning]);
 
-    // 4. Local Model Pre-loader Hook: Re-evaluates on visibility state change
+    // 4. Local Model Pre-loader Hook: Re-evaluates on visibility state change or expand state
     useEffect(() => {
         let isMounted = true;
 
         const initLocalModel = async () => {
+            if (!isExpanded) return; // Only load model weights if the chat widget is expanded/active
+
+            const storeState = useStore.getState();
             if (
                 offlineSettings.offlineModeEnabled &&
                 tabVisible && // Only load model weights if the browser window/tab is visible
                 !isModelLoaded() &&
-                !isDownloading
+                !storeState.isDownloading
             ) {
-                if (isMounted) {
-                    setIsDownloading(true);
-                    setDownloadStatus('Initializing WebGPU...');
-                }
+                setIsDownloading(true);
+                setDownloadStatus('Initializing WebGPU...');
                 try {
                     await loadLocalModel((progress, text) => {
                         if (isMounted) {
@@ -125,24 +130,21 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
                             setDownloadStatus(text);
                         }
                     });
-                    if (isMounted) {
-                        setIsDownloading(false);
-                        setDownloadStatus('Ready');
-                        setIsLocalRunning(true);
-                        setOfflineSettings({ hasAcceptedDownload: true });
-                    }
+                    setIsDownloading(false);
+                    setDownloadStatus('Ready');
+                    setIsLocalRunning(true);
+                    setOfflineSettings({ hasAcceptedDownload: true });
                 } catch (err: any) {
+                    setIsDownloading(false);
+                    setDownloadStatus('Failed to load');
+                    setIsLocalRunning(false);
                     if (isMounted) {
-                        setIsDownloading(false);
-                        setDownloadStatus('Failed to load');
                         setError(err.message || 'Failed to initialize local model.');
                     }
                 }
             } else if (isModelLoaded() && tabVisible) {
-                if (isMounted) {
-                    setIsLocalRunning(true);
-                    setDownloadStatus('Ready');
-                }
+                setIsLocalRunning(true);
+                setDownloadStatus('Ready');
             }
         };
 
@@ -151,7 +153,7 @@ export const useGroqMentor = (nodeTitle: string, currentResource?: string): UseG
         return () => {
             isMounted = false;
         };
-    }, [offlineSettings.offlineModeEnabled, tabVisible, isDownloading, setIsDownloading, setDownloadStatus, setDownloadProgress, setIsLocalRunning, setOfflineSettings]);
+    }, [offlineSettings.offlineModeEnabled, tabVisible, isExpanded, setIsDownloading, setDownloadStatus, setDownloadProgress, setIsLocalRunning, setOfflineSettings]);
 
     // Unload local model if user disables offline mode to free VRAM
     useEffect(() => {

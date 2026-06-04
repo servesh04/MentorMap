@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { useGroqMentor } from '../../hooks/useGroqMentor';
 import { useStore } from '../../store/useStore';
 import OfflineAIModal from '../OfflineAIModal';
+import { cancelModelLoad } from '../../services/webllmService';
 
 interface MentorChatWidgetProps {
     nodeTitle: string;
@@ -22,7 +23,7 @@ const MentorChatWidget: React.FC<MentorChatWidgetProps> = ({
     initialQuery,
     clearInitialQuery
 }) => {
-    const { offlineSettings, setOfflineSettings } = useStore();
+    const { offlineSettings, setOfflineSettings, setIsDownloading, isUnloading } = useStore();
     const [isOfflineModalOpen, setIsOfflineModalOpen] = useState(false);
 
     const handleToggleLocalMode = () => {
@@ -31,6 +32,12 @@ const MentorChatWidget: React.FC<MentorChatWidgetProps> = ({
         } else {
             setOfflineSettings({ offlineModeEnabled: !offlineSettings.offlineModeEnabled });
         }
+    };
+
+    const handleCancelDownload = () => {
+        cancelModelLoad();
+        setOfflineSettings({ offlineModeEnabled: false });
+        setIsDownloading(false);
     };
     const {
         messages,
@@ -41,7 +48,7 @@ const MentorChatWidget: React.FC<MentorChatWidgetProps> = ({
         isDownloading,
         downloadStatus,
         isLocalRunning
-    } = useGroqMentor(nodeTitle, currentResource);
+    } = useGroqMentor(nodeTitle, currentResource, isExpanded);
 
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -93,7 +100,9 @@ const MentorChatWidget: React.FC<MentorChatWidgetProps> = ({
                     <div>
                         <h4 className="text-xs font-bold text-slate-100">AI Mentor</h4>
                         <p className="text-[9px] text-slate-500">
-                            {isDownloading
+                            {isUnloading
+                                ? 'Unloading weights...'
+                                : isDownloading
                                 ? `Downloading... (${downloadProgress}%)`
                                 : offlineSettings.offlineModeEnabled && isLocalRunning
                                 ? 'On-Device AI • Qwen 1.5B'
@@ -121,6 +130,11 @@ const MentorChatWidget: React.FC<MentorChatWidgetProps> = ({
                     {isDownloading && (
                         <span className="text-[8px] tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-full font-bold animate-pulse">
                             DOWNLOADING
+                        </span>
+                    )}
+                    {isUnloading && (
+                        <span className="text-[8px] tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-full font-bold animate-pulse">
+                            UNLOADING
                         </span>
                     )}
                     
@@ -153,6 +167,24 @@ const MentorChatWidget: React.FC<MentorChatWidgetProps> = ({
                             />
                         </div>
                         <span className="text-[10px] font-bold text-emerald-400">{downloadProgress}% completed</span>
+                        <button
+                            onClick={handleCancelDownload}
+                            className="mt-1 text-[10px] font-bold text-rose-400 hover:text-rose-300 hover:underline border border-rose-500/25 bg-rose-500/10 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                        >
+                            Cancel Download & Use Cloud
+                        </button>
+                    </div>
+                )}
+
+                {isUnloading && (
+                    <div className="flex flex-col items-center justify-center h-full text-center p-4 gap-3 bg-slate-900/20 rounded-xl border border-slate-800/40 animate-pulse">
+                        <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
+                        <div>
+                            <h4 className="text-xs font-bold text-slate-200">Releasing Graphics Memory</h4>
+                            <p className="text-[10px] text-slate-500 mt-1 leading-normal max-w-[200px]">
+                                Unloading local model weights from VRAM... Please wait.
+                            </p>
+                        </div>
                     </div>
                 )}
 
@@ -221,8 +253,14 @@ const MentorChatWidget: React.FC<MentorChatWidgetProps> = ({
                         type="text"
                         value={input}
                         onChange={e => setInput(e.target.value)}
-                        placeholder={isDownloading ? "Downloading model, please wait..." : "Ask a question..."}
-                        disabled={isTyping || isDownloading}
+                        placeholder={
+                            isUnloading 
+                                ? "Freeing VRAM, please wait..." 
+                                : isDownloading 
+                                ? "Downloading model, please wait..." 
+                                : "Ask a question..."
+                        }
+                        disabled={isTyping || isDownloading || isUnloading}
                         className={clsx(
                             'flex-1 h-11 px-4 rounded-xl bg-slate-900/60 border border-slate-700/60 text-slate-200 text-sm placeholder:text-slate-600',
                             'focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20',
@@ -231,10 +269,10 @@ const MentorChatWidget: React.FC<MentorChatWidgetProps> = ({
                     />
                     <button
                         type="submit"
-                        disabled={isTyping || !input.trim() || isDownloading}
+                        disabled={isTyping || !input.trim() || isDownloading || isUnloading}
                         className={clsx(
                             'w-11 h-11 rounded-xl flex items-center justify-center transition-all shrink-0 cursor-pointer',
-                            input.trim() && !isTyping && !isDownloading
+                            input.trim() && !isTyping && !isDownloading && !isUnloading
                                 ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold'
                                 : 'bg-slate-800 text-slate-600 cursor-not-allowed'
                         )}

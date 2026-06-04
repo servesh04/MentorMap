@@ -102,11 +102,13 @@ interface AppState {
     isDownloading: boolean;
     downloadProgress: number;
     downloadStatus: string;
+    isUnloading: boolean;
     
     setIsLocalRunning: (running: boolean) => void;
     setIsDownloading: (downloading: boolean) => void;
     setDownloadProgress: (progress: number) => void;
     setDownloadStatus: (status: string) => void;
+    setIsUnloading: (unloading: boolean) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -184,10 +186,12 @@ export const useStore = create<AppState>((set, get) => ({
     isDownloading: false,
     downloadProgress: 0,
     downloadStatus: '',
+    isUnloading: false,
     setIsLocalRunning: (isLocalRunning) => set({ isLocalRunning }),
     setIsDownloading: (isDownloading) => set({ isDownloading }),
     setDownloadProgress: (downloadProgress) => set({ downloadProgress }),
     setDownloadStatus: (downloadStatus) => set({ downloadStatus }),
+    setIsUnloading: (isUnloading) => set({ isUnloading }),
 
     toggleModuleCompletion: (courseId, moduleId) => set((state) => {
         const currentCourseModules = state.completedModules[courseId] || [];

@@ -1,10 +1,22 @@
 import type { WebWorkerMLCEngine, InitProgressReport } from "@mlc-ai/web-llm";
+import { useStore } from "../store/useStore";
 
 const MODEL_ID = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
 
 let engine: WebWorkerMLCEngine | null = null;
 let activeWorker: Worker | null = null;
 let isInitializing = false;
+let isUnloading = false;
+let cancelReject: ((reason?: any) => void) | null = null;
+
+/**
+ * Cancels any active local model loading process.
+ */
+export const cancelModelLoad = () => {
+    if (cancelReject) {
+        cancelReject(new Error("Download cancelled by user."));
+    }
+};
 
 /**
  * Check if WebGPU is supported by the browser and client hardware,
@@ -54,9 +66,17 @@ export const isModelCached = async (): Promise<boolean> => {
 export const loadLocalModel = async (
     onProgress: (progress: number, text: string) => void
 ): Promise<WebWorkerMLCEngine> => {
+    // If a previous instance is currently unloading, wait for it to fully release VRAM
+    while (isUnloading) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+    }
     if (engine) return engine;
-    if (isInitializing) {
-        throw new Error("Local model is already initializing.");
+    if (activeWorker || isInitializing) {
+        console.log("Unloading previous instance to enforce single instance rule.");
+        await unloadModel();
+        while (isUnloading) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+        }
     }
 
     isInitializing = true;
@@ -75,13 +95,38 @@ export const loadLocalModel = async (
 
         const { CreateWebWorkerMLCEngine } = await import("@mlc-ai/web-llm");
 
-        // Initialize the engine inside the Web Worker
-        engine = await CreateWebWorkerMLCEngine(activeWorker, MODEL_ID, {
+        // 1. Create a promise that rejects on worker compile or load errors
+        const workerErrorPromise = new Promise<WebWorkerMLCEngine>((_, reject) => {
+            if (activeWorker) {
+                activeWorker.onerror = (event) => {
+                    event.preventDefault();
+                    reject(new Error("Web Worker failed to load. This can happen if the browser blocks module workers or dependencies could not be resolved. Please check your browser console for detailed compile errors."));
+                };
+            }
+        });
+
+        // 2. Create a promise that rejects if the process times out (25 seconds)
+        const timeoutPromise = new Promise<WebWorkerMLCEngine>((_, reject) => {
+            setTimeout(() => {
+                reject(new Error("Model initialization timed out (25s limit). This usually indicates a blocked connection to Hugging Face (weights server) or a WebGPU driver hang. Try checking your internet connection or updating your graphics drivers."));
+            }, 25000);
+        });
+
+        // 3. Create a promise that rejects if the user cancels the download
+        const cancelPromise = new Promise<WebWorkerMLCEngine>((_, reject) => {
+            cancelReject = reject;
+        });
+
+        // 4. Create the engine promise
+        const enginePromise = CreateWebWorkerMLCEngine(activeWorker, MODEL_ID, {
             initProgressCallback: (report: InitProgressReport) => {
                 const progressPercentage = Math.round(report.progress * 100);
                 onProgress(progressPercentage, report.text);
             }
         });
+
+        // Race them!
+        engine = await Promise.race([enginePromise, workerErrorPromise, timeoutPromise, cancelPromise]);
 
         return engine!;
     } catch (error) {
@@ -94,6 +139,7 @@ export const loadLocalModel = async (
         console.error("Failed to load local WebLLM model in Web Worker:", error);
         throw error;
     } finally {
+        cancelReject = null;
         isInitializing = false;
     }
 };
@@ -180,23 +226,37 @@ export const isModelLoaded = (): boolean => {
  * Unloads the local model from GPU VRAM and terminates the Web Worker.
  */
 export const unloadModel = async (): Promise<void> => {
-    if (engine) {
-        try {
-            await engine.unload();
-        } catch (e: any) {
-            // Ignore binding/tokenizer errors since the WebWorker is terminated immediately below,
-            // which automatically reclaims all WebAssembly heap memory and WebGPU GPU device buffers.
-            console.warn("[INFO] Ignored WebLLM engine unload exception during worker shutdown:", e.message || e);
+    if (isUnloading) return;
+    isUnloading = true;
+    useStore.getState().setIsUnloading(true);
+
+    try {
+        if (engine) {
+            try {
+                // Attempt a clean engine unload but race it with a 2-second timeout to prevent hangs
+                await Promise.race([
+                    engine.unload(),
+                    new Promise((resolve) => setTimeout(resolve, 2000))
+                ]).catch((e) => {
+                    console.warn("[INFO] WebLLM engine unload failed or timed out:", e);
+                });
+            } catch (e: any) {
+                console.warn("[INFO] Ignored WebLLM engine unload exception during worker shutdown:", e.message || e);
+            }
+            engine = null;
         }
-        engine = null;
-    }
-    if (activeWorker) {
-        try {
-            activeWorker.terminate();
-        } catch (e) {
-            console.error("Failed to terminate active worker:", e);
+        if (activeWorker) {
+            try {
+                activeWorker.terminate();
+            } catch (e) {
+                console.error("Failed to terminate active worker:", e);
+            }
+            activeWorker = null;
         }
-        activeWorker = null;
+    } finally {
+        isInitializing = false;
+        isUnloading = false;
+        useStore.getState().setIsUnloading(false);
     }
 };
 
