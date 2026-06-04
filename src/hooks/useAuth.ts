@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, deleteUser, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, deleteUser } from 'firebase/auth';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { useStore } from '../store/useStore';
@@ -10,29 +10,6 @@ export const useAuthListener = () => {
     const { setCurrentUser, setUserRole, setAuthLoading, setActiveCourses, setNotificationPrefs, setLocalStreak, addLocalXP, setLeagueData, setPendingLeagueResult } = useStore();
 
     useEffect(() => {
-        // Handle redirect result if returning from redirect sign-in
-        getRedirectResult(auth).then(async (result) => {
-            if (result) {
-                const user = result.user;
-                const userRef = doc(db, 'users', user.uid);
-                const userDoc = await getDoc(userRef);
-                if (!userDoc.exists()) {
-                    await setDoc(userRef, {
-                        displayName: user.displayName || 'Scholar',
-                        email: user.email,
-                        role: 'beginner',
-                        xp: 0,
-                        streak: 0,
-                        league: 'bronze',
-                        active_courses: [],
-                        createdAt: new Date().toISOString()
-                    });
-                }
-            }
-        }).catch((error) => {
-            console.error("Redirect sign-in failed:", error);
-        });
-
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setAuthLoading(true);
             if (user) {
@@ -117,41 +94,28 @@ export const useAuthListener = () => {
 export const useAuth = () => {
     const { setCurrentUser } = useStore();
 
-    const login = async () => {
-        try {
-            const result = await signInWithPopup(auth, googleProvider);
-            const user = result.user;
-            
-            // Ensure Firestore document exists on first login
-            const userRef = doc(db, 'users', user.uid);
-            const userDoc = await getDoc(userRef);
-            
-            if (!userDoc.exists()) {
-                await setDoc(userRef, {
-                    displayName: user.displayName || 'Scholar',
-                    email: user.email,
-                    role: 'beginner',
-                    xp: 0,
-                    streak: 0,
-                    league: 'bronze',
-                    active_courses: [],
-                    createdAt: new Date().toISOString()
-                });
-            }
-        } catch (error: any) {
-            if (error.code === 'auth/popup-blocked') {
-                console.warn("Popup blocked, falling back to redirect sign-in...");
-                try {
-                    await signInWithRedirect(auth, googleProvider);
-                } catch (redirectError) {
-                    console.error("Redirect sign-in failed:", redirectError);
-                    alert(`Redirect sign-in failed: ${(redirectError as Error).message}`);
+    const login = () => {
+        return signInWithPopup(auth, googleProvider)
+            .then(async (result) => {
+                const user = result.user;
+                
+                // Ensure Firestore document exists on first login
+                const userRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userRef);
+                
+                if (!userDoc.exists()) {
+                    await setDoc(userRef, {
+                        displayName: user.displayName || 'Scholar',
+                        email: user.email,
+                        role: 'beginner',
+                        xp: 0,
+                        streak: 0,
+                        league: 'bronze',
+                        active_courses: [],
+                        createdAt: new Date().toISOString()
+                    });
                 }
-            } else {
-                console.error("Login failed:", error);
-                alert(`Login failed: ${error.message}`);
-            }
-        }
+            });
     };
 
     const signupWithEmail = async (email: string, password: string) => {

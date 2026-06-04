@@ -45,6 +45,23 @@ const Login: React.FC = () => {
         }
     };
 
+    const handleGoogleLogin = () => {
+        setError('');
+        setLoading(true);
+        login()
+            .catch((err: any) => {
+                console.error("Google login failed:", err);
+                if (err.code === 'auth/popup-blocked' || (err.message && err.message.includes('popup-blocked'))) {
+                    setError("Google sign-in popup was blocked by your browser. Please click the popup blocker icon in the browser address bar to allow popups for this site, or use email login below.");
+                } else {
+                    setError(err.message || "Google sign-in failed. Please try again.");
+                }
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+    };
+
     if (authLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background">
@@ -118,8 +135,9 @@ const Login: React.FC = () => {
                 </div>
 
                 <button
-                    onClick={login}
-                    className="w-full flex items-center justify-center gap-3 bg-card text-foreground border border-border font-medium py-2 px-4 rounded-lg hover:bg-muted transition-colors focus:ring-4 focus:ring-primary/20"
+                    onClick={handleGoogleLogin}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-3 bg-card text-foreground border border-border font-medium py-2 px-4 rounded-lg hover:bg-muted transition-colors focus:ring-4 focus:ring-primary/20 disabled:opacity-50"
                 >
                     <img
                         src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
