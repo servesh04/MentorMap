@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import { X, Play, Code2, Terminal, ArrowRightLeft, ChevronDown, Zap, Trash2 } from 'lucide-react';
+import { X, Play, Code2, Terminal, ArrowRightLeft, ChevronDown, Zap, Trash2, Sun, Moon } from 'lucide-react';
 import { SANDBOX_TEMPLATES } from './sandboxTemplates';
 import { SandboxMentorWidget } from './SandboxMentorWidget';
 import { useIsDesktop } from '../../hooks/useIsDesktop';
 import { executeClientCode, type LogMessage } from '../../utils/codeRunner';
 import clsx from 'clsx';
+import { useTheme } from '../../context/ThemeContext';
 
 interface InteractiveSandboxProps {
     isOpen: boolean;
@@ -19,7 +20,30 @@ export const InteractiveSandbox: React.FC<InteractiveSandboxProps> = ({
     nodeTitle
 }) => {
     const isDesktop = useIsDesktop();
-    
+    const { theme: globalTheme } = useTheme();
+
+    // Resolve the active Monaco Editor theme (defaulting to the global theme)
+    const [editorTheme, setEditorTheme] = useState<'vs-dark' | 'vs'>(() => {
+        if (globalTheme === 'dark') return 'vs-dark';
+        if (globalTheme === 'light') return 'vs';
+        if (typeof window !== 'undefined') {
+            return window.matchMedia("(prefers-color-scheme: dark)").matches ? 'vs-dark' : 'vs';
+        }
+        return 'vs-dark';
+    });
+
+    // Sync with global theme changes
+    React.useEffect(() => {
+        if (globalTheme === 'dark') {
+            setEditorTheme('vs-dark');
+        } else if (globalTheme === 'light') {
+            setEditorTheme('vs');
+        } else if (globalTheme === 'system') {
+            const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            setEditorTheme(systemDark ? 'vs-dark' : 'vs');
+        }
+    }, [globalTheme]);
+
     // State configurations
     const [selectedLanguage, setSelectedLanguage] = useState<string>('javascript');
     const [leftWidth, setLeftWidth] = useState<number>(50); // percentage (split ratio)
@@ -252,9 +276,19 @@ export const InteractiveSandbox: React.FC<InteractiveSandboxProps> = ({
                             <Terminal size={13} className="text-emerald-400" />
                             <span>main.{fileExtension}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400 font-bold font-sans">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            <span>Active Template</span>
+                        <div className="flex items-center gap-3">
+                            {/* Editor Theme Toggle */}
+                            <button
+                                onClick={() => setEditorTheme(prev => prev === 'vs-dark' ? 'vs' : 'vs-dark')}
+                                className="p-1 hover:bg-slate-900 text-slate-400 hover:text-slate-100 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
+                                title={`Switch to ${editorTheme === 'vs-dark' ? 'Light' : 'Dark'} Editor Theme`}
+                            >
+                                {editorTheme === 'vs-dark' ? <Sun size={13} /> : <Moon size={13} />}
+                            </button>
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400 font-bold font-sans">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                <span>Active Template</span>
+                            </div>
                         </div>
                     </div>
 
@@ -264,7 +298,7 @@ export const InteractiveSandbox: React.FC<InteractiveSandboxProps> = ({
                             height="100%"
                             language={currentTemplate.monacoLanguage}
                             value={currentTemplate.boilerplate}
-                            theme="vs-dark"
+                            theme={editorTheme}
                             onMount={handleEditorDidMount}
                             options={{
                                 automaticLayout: true,

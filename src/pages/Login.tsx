@@ -47,7 +47,6 @@ const Login: React.FC = () => {
 
     const handleGoogleLogin = () => {
         setError('');
-        setLoading(true);
         login()
             .catch((err: any) => {
                 console.error("Google login failed:", err);
@@ -56,9 +55,6 @@ const Login: React.FC = () => {
                 } else {
                     setError(err.message || "Google sign-in failed. Please try again.");
                 }
-            })
-            .finally(() => {
-                setLoading(false);
             });
     };
 

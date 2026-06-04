@@ -105,11 +105,11 @@ export const loadLocalModel = async (
             }
         });
 
-        // 2. Create a promise that rejects if the process times out (25 seconds)
+        // 2. Create a promise that rejects if the process times out (2 minutes)
         const timeoutPromise = new Promise<WebWorkerMLCEngine>((_, reject) => {
             setTimeout(() => {
-                reject(new Error("Model initialization timed out (25s limit). This usually indicates a blocked connection to Hugging Face (weights server) or a WebGPU driver hang. Try checking your internet connection or updating your graphics drivers."));
-            }, 25000);
+                reject(new Error("Model initialization timed out (2-minute limit). This usually indicates a blocked connection to Hugging Face (weights server) or a WebGPU driver hang. Try checking your internet connection or updating your graphics drivers."));
+            }, 120000);
         });
 
         // 3. Create a promise that rejects if the user cancels the download
