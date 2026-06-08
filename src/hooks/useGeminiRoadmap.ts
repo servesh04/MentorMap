@@ -41,7 +41,8 @@ export const useGeminiRoadmap = (topic: string, isGenerated: boolean): RoadmapRe
             }
 
             const prompt = `
-Create a detailed step-by-step learning roadmap for '${topic}'. 
+Use Google Search to find the latest official documentation and course structures for this topic before responding, especially important for technologies released in the last year.
+Create a detailed step-by-step learning roadmap for '${topic}'.
 Return ONLY raw JSON. Do not use Markdown formatting.
 Structure: 
 { 
@@ -94,6 +95,7 @@ For 'searchHints.articleQuery': Think about which website has the definitive art
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
+                            tools: [{ google_search: {} }],
                             contents: [{ parts: [{ text: prompt }] }],
                         }),
                     }
@@ -112,8 +114,8 @@ For 'searchHints.articleQuery': Think about which website has the definitive art
                     throw new Error("No content generated.");
                 }
 
-                // Clean the response: remove markdown code blocks
-                const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+                // Clean the response: remove markdown code blocks and grounding citation markers
+                const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').replace(/\[\d+\]/g, '').trim();
 
                 const parsedData = JSON.parse(cleanedText);
 

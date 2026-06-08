@@ -39,8 +39,8 @@ export const consumeBountyAttempt = async (userId: string): Promise<void> => {
  */
 const parseGeminiQuiz = (rawText: string): BountyQuestion[] | null => {
     try {
-        // 1. Strip out markdown code blocks if the AI accidentally includes them
-        let cleanText = rawText.replace(/```json/gi, '').replace(/```/g, '');
+        // 1. Strip markdown code blocks and grounding citation markers
+        let cleanText = rawText.replace(/```json/gi, '').replace(/```/g, '').replace(/\[\d+\]/g, '');
 
         // 2. Trim any leading/trailing whitespace or invisible characters
         cleanText = cleanText.trim();
@@ -82,6 +82,7 @@ export const generateBountyQuiz = async (moduleTopic: string): Promise<BountyQue
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                tools: [{ google_search: {} }],
                 contents: [{ parts: [{ text: prompt }] }],
             }),
         }
